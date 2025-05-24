@@ -47,6 +47,8 @@ export const insertWorkflowSchema = createInsertSchema(workflows).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  version: z.string().default("1.0.0"),
 });
 
 export const insertWorkflowInstanceSchema = createInsertSchema(workflowInstances).omit({
