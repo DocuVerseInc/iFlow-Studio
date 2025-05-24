@@ -6,14 +6,14 @@ import {
   BarChart3, 
   Settings, 
   HelpCircle,
-  Workflow,
   Globe,
   GitBranch
 } from "lucide-react";
+import SynapseLogo from "@/components/ui/synapse-logo";
 
 const navigation = [
   {
-    name: "Workflow Designer",
+    name: "iFlow Designer",
     href: "/designer",
     icon: PenTool,
   },
@@ -59,15 +59,8 @@ export default function Sidebar() {
     <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <Workflow className="text-white h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">WorkFlow</h1>
-            <p className="text-sm text-gray-500">Engine</p>
-          </div>
-        </div>
+        <SynapseLogo size="md" showText={true} className="justify-start" />
+        <p className="text-sm text-gray-500 mt-1 ml-11">iFlow Engine</p>
       </div>
       
       {/* Main Navigation */}
