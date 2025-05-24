@@ -12,6 +12,8 @@ import BpmnModeler from "@/components/workflow/bpmn-modeler";
 import PropertiesPanel from "@/components/workflow/properties-panel";
 import CollaborativeCursors from "@/components/collaboration/collaborative-cursors";
 import UserPresence from "@/components/collaboration/user-presence";
+import HelpOverlay from "@/components/workflow/help-overlay";
+import HelpButton from "@/components/workflow/help-button";
 import { useCollaboration } from "@/hooks/use-collaboration";
 import { Download, Upload, Save, Play, UserCheck, GitBranch, Square, FolderOpen, Plus, Edit } from "lucide-react";
 import type { InsertWorkflow } from "@shared/schema";
@@ -24,6 +26,7 @@ export default function WorkflowDesigner() {
   const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [isNewWorkflow, setIsNewWorkflow] = useState(true);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -423,6 +426,19 @@ export default function WorkflowDesigner() {
           <PropertiesPanel selectedElement={selectedElement} />
         </div>
       </div>
+
+      {/* Floating Help Button */}
+      <HelpButton 
+        onShowHelp={() => setIsHelpVisible(true)}
+        selectedElement={selectedElement}
+      />
+
+      {/* Help Overlay */}
+      <HelpOverlay
+        selectedElement={selectedElement}
+        isVisible={isHelpVisible}
+        onClose={() => setIsHelpVisible(false)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Workflow } from "lucide-react";
+import PaletteTooltips from "./palette-tooltips";
 
 interface BpmnModelerProps {
   onXmlChange: (xml: string) => void;
