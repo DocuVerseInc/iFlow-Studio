@@ -239,7 +239,11 @@ export default function WorkflowVersions() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Workflow</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <Select onValueChange={(value) => {
+                          const workflowId = parseInt(value);
+                          field.onChange(workflowId);
+                          handleWorkflowSelection(workflowId);
+                        }}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select workflow" />
@@ -266,6 +270,9 @@ export default function WorkflowVersions() {
                         <FormControl>
                           <Input placeholder="e.g., 1.1.0" {...field} />
                         </FormControl>
+                        <div className="text-xs text-muted-foreground">
+                          Auto-suggested based on existing versions. You can override this value.
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
