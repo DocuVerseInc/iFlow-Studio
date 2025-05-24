@@ -18,6 +18,7 @@ function Router() {
       <main className="flex-1 overflow-hidden">
         <Switch>
           <Route path="/" component={WorkflowDesigner} />
+          <Route path="/workflow-designer" component={WorkflowDesigner} />
           <Route path="/designer" component={WorkflowDesigner} />
           <Route path="/tasks" component={TaskManagement} />
           <Route path="/admin" component={AdminDashboard} />
