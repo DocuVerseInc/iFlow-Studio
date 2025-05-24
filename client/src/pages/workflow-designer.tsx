@@ -24,13 +24,48 @@ export default function WorkflowDesigner() {
   const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [isNewWorkflow, setIsNewWorkflow] = useState(true);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Generate a unique user ID for this session
+  const userId = useRef(`user-${Math.random().toString(36).substr(2, 9)}`).current;
+  const userName = useRef(`User ${userId.slice(-4)}`).current;
 
   // Fetch saved workflows for loading
   const { data: savedWorkflows = [] } = useQuery({
     queryKey: ['/api/workflows'],
   });
+
+  // Real-time collaboration
+  const { activeUsers, isConnected, sendCursorPosition, broadcastElementUpdate } = useCollaboration(
+    currentWorkflowId,
+    userId,
+    userName,
+    {
+      onUserJoined: (user) => {
+        toast({
+          title: "User Joined",
+          description: `${user.userName} is now collaborating`,
+        });
+      },
+      onUserLeft: (user) => {
+        toast({
+          title: "User Left",
+          description: `${user.userName} stopped collaborating`,
+        });
+      },
+      onElementChanged: (data) => {
+        if (data.bpmnXml && data.bpmnXml !== bpmnXml) {
+          setBpmnXml(data.bpmnXml);
+          toast({
+            title: "Workflow Updated",
+            description: `${data.userName} made changes to the workflow`,
+          });
+        }
+      }
+    }
+  );
 
   const saveWorkflowMutation = useMutation({
     mutationFn: async (workflow: InsertWorkflow) => {
@@ -146,6 +181,24 @@ export default function WorkflowDesigner() {
       description: "Started a new workflow",
     });
   };
+
+  // Handle mouse movement for collaborative cursors
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (canvasRef.current && currentWorkflowId) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      sendCursorPosition(x, y);
+    }
+  }, [currentWorkflowId, sendCursorPosition]);
+
+  // Handle BPMN XML changes and broadcast to collaborators
+  const handleBpmnXmlChange = useCallback((xml: string) => {
+    setBpmnXml(xml);
+    if (currentWorkflowId && selectedElement) {
+      broadcastElementUpdate(selectedElement.id || 'canvas', {}, xml);
+    }
+  }, [currentWorkflowId, selectedElement, broadcastElementUpdate]);
 
   const handleExport = () => {
     if (!bpmnXml) {
@@ -265,6 +318,13 @@ export default function WorkflowDesigner() {
                 ? "Save Workflow" 
                 : "Update Workflow"}
             </Button>
+            
+            {/* User Presence Indicator */}
+            <UserPresence 
+              users={activeUsers} 
+              currentUserId={userId} 
+              isConnected={isConnected} 
+            />
           </div>
         </div>
       </header>
@@ -339,12 +399,22 @@ export default function WorkflowDesigner() {
 
       {/* Main Content */}
       <div className="flex-1 flex">
-        {/* BPMN Canvas */}
-        <div className="flex-1 relative">
+        {/* BPMN Canvas with Collaborative Features */}
+        <div 
+          ref={canvasRef}
+          className="flex-1 relative"
+          onMouseMove={handleMouseMove}
+        >
           <BpmnModeler 
-            onXmlChange={setBpmnXml}
+            onXmlChange={handleBpmnXmlChange}
             onElementSelect={setSelectedElement}
             xml={bpmnXml}
+          />
+          
+          {/* Collaborative Cursors Overlay */}
+          <CollaborativeCursors 
+            users={activeUsers} 
+            currentUserId={userId} 
           />
         </div>
 
