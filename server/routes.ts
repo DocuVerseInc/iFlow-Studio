@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { insertWorkflowSchema, insertWorkflowInstanceSchema, insertTaskSchema } from "@shared/schema";
+import { insertWorkflowSchema, insertWorkflowInstanceSchema, insertTaskSchema, insertApiIntegrationSchema, insertApiCallSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -260,6 +260,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(workflows);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch workflows with instances" });
+    }
+  });
+
+  // API Integration routes
+  app.get("/api/integrations", async (req, res) => {
+    try {
+      const integrations = await storage.getApiIntegrations();
+      res.json(integrations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch API integrations" });
+    }
+  });
+
+  app.get("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const integration = await storage.getApiIntegration(id);
+      if (!integration) {
+        return res.status(404).json({ message: "API integration not found" });
+      }
+      res.json(integration);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch API integration" });
+    }
+  });
+
+  app.post("/api/integrations", async (req, res) => {
+    try {
+      const validatedData = insertApiIntegrationSchema.parse(req.body);
+      const integration = await storage.createApiIntegration(validatedData);
+      broadcastUpdate('integration_created', integration);
+      res.status(201).json(integration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid integration data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create API integration" });
+    }
+  });
+
+  app.put("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertApiIntegrationSchema.partial().parse(req.body);
+      const integration = await storage.updateApiIntegration(id, validatedData);
+      if (!integration) {
+        return res.status(404).json({ message: "API integration not found" });
+      }
+      broadcastUpdate('integration_updated', integration);
+      res.json(integration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid integration data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update API integration" });
+    }
+  });
+
+  app.delete("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteApiIntegration(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "API integration not found" });
+      }
+      broadcastUpdate('integration_deleted', { id });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete API integration" });
+    }
+  });
+
+  // API Call execution endpoint
+  app.post("/api/integrations/:id/execute", async (req, res) => {
+    try {
+      const integrationId = parseInt(req.params.id);
+      const { method, endpoint, requestBody, workflowInstanceId, taskId } = req.body;
+      
+      const integration = await storage.getApiIntegration(integrationId);
+      if (!integration) {
+        return res.status(404).json({ message: "API integration not found" });
+      }
+
+      // Create API call record
+      const apiCall = await storage.createApiCall({
+        workflowInstanceId,
+        taskId,
+        integrationId,
+        method: method.toUpperCase(),
+        endpoint,
+        requestHeaders: integration.headers,
+        requestBody: requestBody || null,
+        status: 'pending',
+      });
+
+      // Execute the actual API call
+      const startTime = Date.now();
+      try {
+        const url = `${integration.baseUrl}${endpoint}`;
+        const headers = { ...integration.headers };
+
+        // Add authentication headers
+        if (integration.authType === 'bearer' && integration.authConfig.token) {
+          headers['Authorization'] = `Bearer ${integration.authConfig.token}`;
+        } else if (integration.authType === 'api_key' && integration.authConfig.key) {
+          const headerName = integration.authConfig.header || 'X-API-Key';
+          headers[headerName] = integration.authConfig.key;
+        } else if (integration.authType === 'basic' && integration.authConfig.username && integration.authConfig.password) {
+          const credentials = Buffer.from(`${integration.authConfig.username}:${integration.authConfig.password}`).toString('base64');
+          headers['Authorization'] = `Basic ${credentials}`;
+        }
+
+        const response = await fetch(url, {
+          method: method.toUpperCase(),
+          headers,
+          body: requestBody ? JSON.stringify(requestBody) : undefined,
+          signal: AbortSignal.timeout(integration.timeout),
+        });
+
+        const duration = Date.now() - startTime;
+        const responseBody = response.headers.get('content-type')?.includes('application/json') 
+          ? await response.json() 
+          : await response.text();
+
+        // Update API call with success
+        await storage.updateApiCall(apiCall.id, {
+          status: response.ok ? 'success' : 'failed',
+          responseStatus: response.status,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseBody: typeof responseBody === 'string' ? { data: responseBody } : responseBody,
+          duration,
+          errorMessage: response.ok ? null : `HTTP ${response.status}: ${response.statusText}`,
+        });
+
+        broadcastUpdate('api_call_completed', { apiCallId: apiCall.id, success: response.ok });
+        res.json({ success: response.ok, data: responseBody, status: response.status });
+
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        await storage.updateApiCall(apiCall.id, {
+          status: 'failed',
+          duration,
+          errorMessage,
+        });
+
+        broadcastUpdate('api_call_completed', { apiCallId: apiCall.id, success: false });
+        res.status(500).json({ success: false, error: errorMessage });
+      }
+
+    } catch (error) {
+      res.status(500).json({ message: "Failed to execute API call" });
+    }
+  });
+
+  // API Call history routes
+  app.get("/api/api-calls", async (req, res) => {
+    try {
+      const workflowInstanceId = req.query.workflowInstanceId as string;
+      if (workflowInstanceId) {
+        const calls = await storage.getApiCallsByWorkflowInstance(parseInt(workflowInstanceId));
+        res.json(calls);
+      } else {
+        const calls = await storage.getApiCalls();
+        res.json(calls);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch API calls" });
     }
   });
 

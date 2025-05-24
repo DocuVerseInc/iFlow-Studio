@@ -2,12 +2,18 @@ import {
   workflows, 
   workflowInstances, 
   tasks,
+  apiIntegrations,
+  apiCalls,
   type Workflow, 
   type WorkflowInstance, 
   type Task,
+  type ApiIntegration,
+  type ApiCall,
   type InsertWorkflow, 
   type InsertWorkflowInstance, 
   type InsertTask,
+  type InsertApiIntegration,
+  type InsertApiCall,
   type WorkflowWithInstance,
   type TaskWithWorkflow,
   type AdminMetrics
@@ -36,6 +42,20 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, task: Partial<InsertTask>): Promise<Task | undefined>;
 
+  // API Integration operations
+  getApiIntegrations(): Promise<ApiIntegration[]>;
+  getApiIntegration(id: number): Promise<ApiIntegration | undefined>;
+  createApiIntegration(integration: InsertApiIntegration): Promise<ApiIntegration>;
+  updateApiIntegration(id: number, integration: Partial<InsertApiIntegration>): Promise<ApiIntegration | undefined>;
+  deleteApiIntegration(id: number): Promise<boolean>;
+
+  // API Call operations
+  getApiCalls(): Promise<ApiCall[]>;
+  getApiCall(id: number): Promise<ApiCall | undefined>;
+  getApiCallsByWorkflowInstance(instanceId: number): Promise<ApiCall[]>;
+  createApiCall(apiCall: InsertApiCall): Promise<ApiCall>;
+  updateApiCall(id: number, apiCall: Partial<InsertApiCall>): Promise<ApiCall | undefined>;
+
   // Dashboard metrics
   getAdminMetrics(): Promise<AdminMetrics>;
   getWorkflowsWithInstances(): Promise<WorkflowWithInstance[]>;
@@ -45,18 +65,26 @@ export class MemStorage implements IStorage {
   private workflows: Map<number, Workflow>;
   private workflowInstances: Map<number, WorkflowInstance>;
   private tasks: Map<number, Task>;
+  private apiIntegrations: Map<number, ApiIntegration>;
+  private apiCalls: Map<number, ApiCall>;
   private currentWorkflowId: number;
   private currentInstanceId: number;
   private currentTaskId: number;
+  private currentIntegrationId: number;
+  private currentApiCallId: number;
   private recentActivity: AdminMetrics['recentActivity'];
 
   constructor() {
     this.workflows = new Map();
     this.workflowInstances = new Map();
     this.tasks = new Map();
+    this.apiIntegrations = new Map();
+    this.apiCalls = new Map();
     this.currentWorkflowId = 1;
     this.currentInstanceId = 1;
     this.currentTaskId = 1;
+    this.currentIntegrationId = 1;
+    this.currentApiCallId = 1;
     this.recentActivity = [];
     
     // Add some sample data
@@ -160,6 +188,39 @@ export class MemStorage implements IStorage {
         timestamp: new Date(),
       },
     ];
+
+    // Sample API integrations
+    const sampleIntegrations = [
+      {
+        id: 1,
+        name: "Customer API",
+        baseUrl: "https://api.example.com",
+        authType: "bearer",
+        authConfig: { token: "your-api-token" },
+        headers: { "Content-Type": "application/json" },
+        timeout: 30000,
+        retryAttempts: 3,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        name: "Payment Gateway",
+        baseUrl: "https://payments.example.com",
+        authType: "api_key",
+        authConfig: { key: "your-api-key", header: "X-API-Key" },
+        headers: { "Content-Type": "application/json" },
+        timeout: 15000,
+        retryAttempts: 2,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    sampleIntegrations.forEach(integration => this.apiIntegrations.set(integration.id, integration));
+    this.currentIntegrationId = 3;
   }
 
   // Workflow operations
@@ -343,10 +404,115 @@ export class MemStorage implements IStorage {
     return updatedTask;
   }
 
+  // API Integration operations
+  async getApiIntegrations(): Promise<ApiIntegration[]> {
+    return Array.from(this.apiIntegrations.values());
+  }
+
+  async getApiIntegration(id: number): Promise<ApiIntegration | undefined> {
+    return this.apiIntegrations.get(id);
+  }
+
+  async createApiIntegration(insertIntegration: InsertApiIntegration): Promise<ApiIntegration> {
+    const id = this.currentIntegrationId++;
+    const now = new Date();
+    const integration: ApiIntegration = {
+      ...insertIntegration,
+      id,
+      authConfig: insertIntegration.authConfig || {},
+      headers: insertIntegration.headers || {},
+      timeout: insertIntegration.timeout || 30000,
+      retryAttempts: insertIntegration.retryAttempts || 3,
+      isActive: insertIntegration.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.apiIntegrations.set(id, integration);
+    
+    this.addActivity('workflow_deployed', `API integration "${integration.name}" created`);
+    
+    return integration;
+  }
+
+  async updateApiIntegration(id: number, updateData: Partial<InsertApiIntegration>): Promise<ApiIntegration | undefined> {
+    const integration = this.apiIntegrations.get(id);
+    if (!integration) return undefined;
+
+    const updatedIntegration: ApiIntegration = {
+      ...integration,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    
+    this.apiIntegrations.set(id, updatedIntegration);
+    return updatedIntegration;
+  }
+
+  async deleteApiIntegration(id: number): Promise<boolean> {
+    return this.apiIntegrations.delete(id);
+  }
+
+  // API Call operations
+  async getApiCalls(): Promise<ApiCall[]> {
+    return Array.from(this.apiCalls.values());
+  }
+
+  async getApiCall(id: number): Promise<ApiCall | undefined> {
+    return this.apiCalls.get(id);
+  }
+
+  async getApiCallsByWorkflowInstance(instanceId: number): Promise<ApiCall[]> {
+    return Array.from(this.apiCalls.values()).filter(
+      call => call.workflowInstanceId === instanceId
+    );
+  }
+
+  async createApiCall(insertApiCall: InsertApiCall): Promise<ApiCall> {
+    const id = this.currentApiCallId++;
+    const apiCall: ApiCall = {
+      ...insertApiCall,
+      id,
+      requestHeaders: insertApiCall.requestHeaders || {},
+      responseHeaders: insertApiCall.responseHeaders || null,
+      responseBody: insertApiCall.responseBody || null,
+      responseStatus: insertApiCall.responseStatus || null,
+      errorMessage: insertApiCall.errorMessage || null,
+      duration: insertApiCall.duration || null,
+      attempts: insertApiCall.attempts || 1,
+      createdAt: new Date(),
+      completedAt: null,
+    };
+    this.apiCalls.set(id, apiCall);
+    
+    return apiCall;
+  }
+
+  async updateApiCall(id: number, updateData: Partial<InsertApiCall>): Promise<ApiCall | undefined> {
+    const apiCall = this.apiCalls.get(id);
+    if (!apiCall) return undefined;
+
+    const updatedApiCall: ApiCall = {
+      ...apiCall,
+      ...updateData,
+      completedAt: updateData.status && updateData.status !== 'pending' ? new Date() : apiCall.completedAt,
+    };
+    
+    this.apiCalls.set(id, updatedApiCall);
+    
+    if (updateData.status === 'success') {
+      this.addActivity('api_call_success', `API call to ${apiCall.endpoint} succeeded`);
+    } else if (updateData.status === 'failed') {
+      this.addActivity('api_call_failed', `API call to ${apiCall.endpoint} failed`);
+    }
+    
+    return updatedApiCall;
+  }
+
   // Dashboard metrics
   async getAdminMetrics(): Promise<AdminMetrics> {
     const allInstances = await this.getWorkflowInstances();
     const allTasks = await this.getTasks();
+    const allApiCalls = await this.getApiCalls();
     
     const activeWorkflows = allInstances.filter(i => i.status === 'running').length;
     const pendingTasks = allTasks.filter(t => t.status === 'pending').length;
@@ -358,6 +524,14 @@ export class MemStorage implements IStorage {
       t.completedAt && 
       t.completedAt >= today
     ).length;
+
+    const apiCallsToday = allApiCalls.filter(call => 
+      call.createdAt >= today
+    ).length;
+
+    const failedApiCalls = allApiCalls.filter(call => 
+      call.status === 'failed'
+    ).length;
     
     // Simulate system health (in real app, this would check actual system metrics)
     const systemHealth = 98.5;
@@ -367,6 +541,8 @@ export class MemStorage implements IStorage {
       pendingTasks,
       completedToday,
       systemHealth,
+      apiCallsToday,
+      failedApiCalls,
       recentActivity: this.recentActivity.slice(-10).reverse(), // Last 10 activities, newest first
     };
   }

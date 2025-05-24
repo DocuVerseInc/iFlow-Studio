@@ -76,13 +76,68 @@ export type TaskWithWorkflow = Task & {
   workflowId?: number;
 };
 
+// API Integration types
+export const apiIntegrations = pgTable("api_integrations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  baseUrl: text("base_url").notNull(),
+  authType: text("auth_type").notNull(), // 'none', 'bearer', 'basic', 'api_key'
+  authConfig: jsonb("auth_config").$type<Record<string, any>>().default({}),
+  headers: jsonb("headers").$type<Record<string, string>>().default({}),
+  timeout: integer("timeout").default(30000),
+  retryAttempts: integer("retry_attempts").default(3),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const apiCalls = pgTable("api_calls", {
+  id: serial("id").primaryKey(),
+  workflowInstanceId: integer("workflow_instance_id").notNull(),
+  taskId: integer("task_id").notNull(),
+  integrationId: integer("integration_id").notNull(),
+  method: text("method").notNull(), // 'GET', 'POST', 'PUT', 'DELETE'
+  endpoint: text("endpoint").notNull(),
+  requestHeaders: jsonb("request_headers").$type<Record<string, string>>().default({}),
+  requestBody: jsonb("request_body").$type<Record<string, any>>(),
+  responseStatus: integer("response_status"),
+  responseHeaders: jsonb("response_headers").$type<Record<string, string>>(),
+  responseBody: jsonb("response_body").$type<Record<string, any>>(),
+  errorMessage: text("error_message"),
+  duration: integer("duration"), // in milliseconds
+  attempts: integer("attempts").default(1),
+  status: text("status").notNull(), // 'pending', 'success', 'failed', 'retrying'
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertApiIntegrationSchema = createInsertSchema(apiIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertApiCallSchema = createInsertSchema(apiCalls).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export type InsertApiIntegration = z.infer<typeof insertApiIntegrationSchema>;
+export type ApiIntegration = typeof apiIntegrations.$inferSelect;
+
+export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
+export type ApiCall = typeof apiCalls.$inferSelect;
+
 export type AdminMetrics = {
   activeWorkflows: number;
   pendingTasks: number;
   completedToday: number;
   systemHealth: number;
+  apiCallsToday: number;
+  failedApiCalls: number;
   recentActivity: {
-    type: 'workflow_completed' | 'task_assigned' | 'workflow_deployed' | 'workflow_failed';
+    type: 'workflow_completed' | 'task_assigned' | 'workflow_deployed' | 'workflow_failed' | 'api_call_success' | 'api_call_failed';
     message: string;
     timestamp: Date;
   }[];
