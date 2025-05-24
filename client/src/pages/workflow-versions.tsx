@@ -167,7 +167,7 @@ export default function WorkflowVersions() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Workflow Versions & Deployments</h1>
+        <h1 className="text-3xl font-bold">iFlow Versions & Deployments</h1>
         <div className="flex gap-2">
           <Dialog open={isVersionDialogOpen} onOpenChange={setIsVersionDialogOpen}>
             <DialogTrigger asChild>
@@ -328,14 +328,14 @@ export default function WorkflowVersions() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GitBranch className="h-5 w-5" />
-              Workflow Versions
+              iFlow Versions
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <Select onValueChange={(value) => setSelectedWorkflowId(parseInt(value))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select workflow to view versions" />
+                  <SelectValue placeholder="Select iFlow to view versions" />
                 </SelectTrigger>
                 <SelectContent>
                   {workflows.map((workflow: any) => (

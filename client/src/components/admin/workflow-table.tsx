@@ -64,8 +64,8 @@ export default function WorkflowTable({ workflows }: WorkflowTableProps) {
         <CardContent>
           <div className="text-center py-8">
             <Workflow className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No workflows found</h3>
-            <p className="text-gray-500">Create your first workflow to get started</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No iFlows found</h3>
+            <p className="text-gray-500">Create your first iFlow to get started</p>
           </div>
         </CardContent>
       </Card>
@@ -82,7 +82,7 @@ export default function WorkflowTable({ workflows }: WorkflowTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Workflow</TableHead>
+                <TableHead>iFlow</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Active Tasks</TableHead>
@@ -105,7 +105,7 @@ export default function WorkflowTable({ workflows }: WorkflowTableProps) {
                         </div>
                         <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">{workflow.name}</div>
-                          <div className="text-sm text-gray-500">WF-{workflow.id.toString().padStart(4, '0')}</div>
+                          <div className="text-sm text-gray-500">IF-{workflow.id.toString().padStart(4, '0')}</div>
                         </div>
                       </div>
                     </TableCell>
