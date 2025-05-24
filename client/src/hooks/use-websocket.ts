@@ -7,11 +7,31 @@ export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    // Validate window.location is available and properly formed
+    if (typeof window === 'undefined' || !window.location) {
+      console.warn("WebSocket not available: window.location is undefined");
+      return;
+    }
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const host = window.location.host;
+    
+    // Validate host before constructing URL
+    if (!host || host === 'undefined:undefined') {
+      console.warn("WebSocket not available: invalid host", host);
+      return;
+    }
+    
+    const wsUrl = `${protocol}//${host}/ws`;
+    console.log("Attempting WebSocket connection to:", wsUrl);
     
     const connect = () => {
       try {
+        // Additional validation before WebSocket construction
+        if (!wsUrl || wsUrl.includes('undefined')) {
+          throw new Error(`Invalid WebSocket URL: ${wsUrl}`);
+        }
+        
         wsRef.current = new WebSocket(wsUrl);
         
         wsRef.current.onopen = () => {
@@ -71,8 +91,14 @@ export function useWebSocket() {
       } catch (error) {
         console.error("Failed to create WebSocket connection:", error);
         setIsConnected(false);
-        // Retry connection after 5 seconds on construction failure
-        setTimeout(connect, 5000);
+        
+        // Only retry if the error is not due to invalid URL construction
+        if (!error.message?.includes('Invalid WebSocket URL')) {
+          console.log("Retrying WebSocket connection in 5 seconds...");
+          setTimeout(connect, 5000);
+        } else {
+          console.error("WebSocket connection permanently disabled due to invalid URL");
+        }
       }
     };
     
