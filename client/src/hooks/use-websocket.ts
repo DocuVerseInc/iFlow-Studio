@@ -93,7 +93,7 @@ export function useWebSocket() {
         setIsConnected(false);
         
         // Only retry if the error is not due to invalid URL construction
-        if (!error.message?.includes('Invalid WebSocket URL')) {
+        if (!(error instanceof Error) || !error.message?.includes('Invalid WebSocket URL')) {
           console.log("Retrying WebSocket connection in 5 seconds...");
           setTimeout(connect, 5000);
         } else {
