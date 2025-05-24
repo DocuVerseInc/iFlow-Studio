@@ -8,24 +8,120 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time updates
+  // WebSocket server for real-time collaboration
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
-  const clients = new Set<WebSocket>();
+  const clients = new Map<WebSocket, { userId: string; userName: string; workflowId?: number; cursor?: { x: number; y: number } }>();
   
   wss.on('connection', (ws) => {
-    clients.add(ws);
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        switch (data.type) {
+          case 'join':
+            // User joins a workflow session
+            clients.set(ws, {
+              userId: data.userId,
+              userName: data.userName,
+              workflowId: data.workflowId
+            });
+            
+            // Notify others that user joined
+            broadcastToWorkflow(data.workflowId, 'user_joined', {
+              userId: data.userId,
+              userName: data.userName
+            }, ws);
+            
+            // Send current active users to the new user
+            const activeUsers = getActiveUsersInWorkflow(data.workflowId);
+            ws.send(JSON.stringify({
+              type: 'active_users',
+              data: activeUsers
+            }));
+            break;
+            
+          case 'cursor_move':
+            // Update user's cursor position
+            const clientData = clients.get(ws);
+            if (clientData) {
+              clientData.cursor = { x: data.x, y: data.y };
+              clients.set(ws, clientData);
+              
+              // Broadcast cursor position to other users in the same workflow
+              if (clientData.workflowId) {
+                broadcastToWorkflow(clientData.workflowId, 'cursor_update', {
+                  userId: clientData.userId,
+                  userName: clientData.userName,
+                  x: data.x,
+                  y: data.y
+                }, ws);
+              }
+            }
+            break;
+            
+          case 'element_update':
+            // Broadcast BPMN element changes
+            const userData = clients.get(ws);
+            if (userData && userData.workflowId) {
+              broadcastToWorkflow(userData.workflowId, 'element_changed', {
+                userId: userData.userId,
+                userName: userData.userName,
+                elementId: data.elementId,
+                changes: data.changes,
+                bpmnXml: data.bpmnXml
+              }, ws);
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
     
     ws.on('close', () => {
-      clients.delete(ws);
+      const clientData = clients.get(ws);
+      if (clientData) {
+        // Notify others that user left
+        if (clientData.workflowId) {
+          broadcastToWorkflow(clientData.workflowId, 'user_left', {
+            userId: clientData.userId,
+            userName: clientData.userName
+          });
+        }
+        clients.delete(ws);
+      }
     });
   });
 
+  function getActiveUsersInWorkflow(workflowId: number) {
+    const users: any[] = [];
+    clients.forEach((clientData, ws) => {
+      if (clientData.workflowId === workflowId) {
+        users.push({
+          userId: clientData.userId,
+          userName: clientData.userName,
+          cursor: clientData.cursor
+        });
+      }
+    });
+    return users;
+  }
+
+  function broadcastToWorkflow(workflowId: number, type: string, data: any, excludeWs?: WebSocket) {
+    const message = JSON.stringify({ type, data });
+    clients.forEach((clientData, ws) => {
+      if (clientData.workflowId === workflowId && ws !== excludeWs && ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
+      }
+    });
+  }
+
   function broadcastUpdate(type: string, data: any) {
     const message = JSON.stringify({ type, data });
-    clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+    clients.forEach((clientData, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
       }
     });
   }

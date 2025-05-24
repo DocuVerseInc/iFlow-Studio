@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import BpmnModeler from "@/components/workflow/bpmn-modeler";
 import PropertiesPanel from "@/components/workflow/properties-panel";
+import CollaborativeCursors from "@/components/collaboration/collaborative-cursors";
+import UserPresence from "@/components/collaboration/user-presence";
+import { useCollaboration } from "@/hooks/use-collaboration";
 import { Download, Upload, Save, Play, UserCheck, GitBranch, Square, FolderOpen, Plus, Edit } from "lucide-react";
 import type { InsertWorkflow } from "@shared/schema";
 
