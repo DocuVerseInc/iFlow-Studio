@@ -62,8 +62,8 @@ export default function WorkflowDesigner() {
         if (data.bpmnXml && data.bpmnXml !== bpmnXml) {
           setBpmnXml(data.bpmnXml);
           toast({
-            title: "Workflow Updated",
-            description: `${data.userName} made changes to the workflow`,
+            title: "iFlow Updated",
+            description: `${data.userName} made changes to the iFlow`,
           });
         }
       }
@@ -370,13 +370,13 @@ export default function WorkflowDesigner() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="workflow-name" className="text-sm font-medium text-gray-700">
-              Workflow Name *
+              iFlow Name *
             </Label>
             <Input
               id="workflow-name"
               value={workflowName}
               onChange={(e) => setWorkflowName(e.target.value)}
-              placeholder="Enter workflow name..."
+              placeholder="Enter iFlow name..."
               className="mt-1"
             />
           </div>
@@ -388,7 +388,7 @@ export default function WorkflowDesigner() {
               id="workflow-description"
               value={workflowDescription}
               onChange={(e) => setWorkflowDescription(e.target.value)}
-              placeholder="Enter workflow description..."
+              placeholder="Enter iFlow description..."
               className="mt-1"
             />
           </div>

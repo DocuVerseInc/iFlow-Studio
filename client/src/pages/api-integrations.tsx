@@ -103,7 +103,7 @@ export default function ApiIntegrations() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">API Integrations</h2>
-            <p className="text-gray-600 mt-1">Connect your workflows to external systems</p>
+            <p className="text-gray-600 mt-1">Connect your iFlows to external systems</p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
@@ -210,7 +210,7 @@ export default function ApiIntegrations() {
             <Globe className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No API integrations</h3>
             <p className="text-gray-500 mb-4">
-              Connect your workflows to external systems and APIs
+              Connect your iFlows to external systems and APIs
             </p>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
