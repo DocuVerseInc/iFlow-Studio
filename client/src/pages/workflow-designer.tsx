@@ -180,51 +180,13 @@ export default function WorkflowDesigner() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* BPMN Canvas */}
-        <div className="flex-1 relative">
-          <BpmnModeler 
-            onXmlChange={setBpmnXml}
-            onElementSelect={setSelectedElement}
-            xml={bpmnXml}
-          />
-        </div>
-
-        {/* Properties Panel */}
-        <div className="w-80 bg-white border-l border-gray-200 flex-shrink-0">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Properties</h3>
-            
-            {/* Workflow Properties */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <Label htmlFor="workflow-name">Workflow Name</Label>
-                <Input
-                  id="workflow-name"
-                  value={workflowName}
-                  onChange={(e) => setWorkflowName(e.target.value)}
-                  placeholder="Enter workflow name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="workflow-description">Description</Label>
-                <Textarea
-                  id="workflow-description"
-                  value={workflowDescription}
-                  onChange={(e) => setWorkflowDescription(e.target.value)}
-                  placeholder="Enter description"
-                  rows={3}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            {/* Element Properties */}
-            <PropertiesPanel selectedElement={selectedElement} />
-          </div>
-        </div>
+      {/* Main Content - BPMN Modeler with Built-in Properties Panel */}
+      <div className="flex-1">
+        <BpmnModeler 
+          onXmlChange={setBpmnXml}
+          onElementSelect={setSelectedElement}
+          xml={bpmnXml}
+        />
       </div>
     </div>
   );
