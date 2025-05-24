@@ -299,6 +299,41 @@ export default function WorkflowDesigner() {
         </div>
       </div>
 
+      {/* Workflow Details Form */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="workflow-name" className="text-sm font-medium text-gray-700">
+              Workflow Name *
+            </Label>
+            <Input
+              id="workflow-name"
+              value={workflowName}
+              onChange={(e) => setWorkflowName(e.target.value)}
+              placeholder="Enter workflow name..."
+              className="mt-1"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="workflow-description" className="text-sm font-medium text-gray-700">
+              Description
+            </Label>
+            <Input
+              id="workflow-description"
+              value={workflowDescription}
+              onChange={(e) => setWorkflowDescription(e.target.value)}
+              placeholder="Enter workflow description..."
+              className="mt-1"
+            />
+          </div>
+        </div>
+        {currentWorkflowId && (
+          <div className="mt-2 text-sm text-blue-600">
+            Currently editing: {workflowName} (ID: {currentWorkflowId})
+          </div>
+        )}
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 flex">
         {/* BPMN Canvas */}
