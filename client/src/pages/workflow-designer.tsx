@@ -180,13 +180,21 @@ export default function WorkflowDesigner() {
         </div>
       </div>
 
-      {/* Main Content - BPMN Modeler with Built-in Properties Panel */}
-      <div className="flex-1">
-        <BpmnModeler 
-          onXmlChange={setBpmnXml}
-          onElementSelect={setSelectedElement}
-          xml={bpmnXml}
-        />
+      {/* Main Content */}
+      <div className="flex-1 flex">
+        {/* BPMN Canvas */}
+        <div className="flex-1 relative">
+          <BpmnModeler 
+            onXmlChange={setBpmnXml}
+            onElementSelect={setSelectedElement}
+            xml={bpmnXml}
+          />
+        </div>
+
+        {/* Properties Panel */}
+        <div className="w-80 bg-white border-l border-gray-200 flex-shrink-0">
+          <PropertiesPanel selectedElement={selectedElement} />
+        </div>
       </div>
     </div>
   );
