@@ -122,6 +122,8 @@ export default function BpmnModeler({ onXmlChange, onElementSelect, xml }: BpmnM
   return (
     <div className="h-full w-full bg-gray-50 relative">
       <div ref={containerRef} className="h-full w-full bjs-container" />
+      {/* Palette Tooltips */}
+      <PaletteTooltips modelerRef={modelerRef} />
       {/* Fallback content when BPMN.js is not available */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="text-center text-gray-500">
