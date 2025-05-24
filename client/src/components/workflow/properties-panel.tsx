@@ -4,13 +4,32 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, X, ChevronDown, ChevronRight } from "lucide-react";
 
 interface PropertiesPanelProps {
   selectedElement: any;
+}
+
+interface FormField {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface Listener {
+  index: string;
+  event: string;
+  type: string;
+  value: string;
+  actions: string;
+}
+
+interface ExtensionProperty {
+  index: string;
+  name: string;
+  value: string;
+  actions: string;
 }
 
 const assigneeOptions = [
@@ -22,129 +41,165 @@ const assigneeOptions = [
   { value: "david.brown", label: "David Brown" },
 ];
 
-const priorityOptions = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "critical", label: "Critical" },
+const loopOptions = [
+  { value: "Null", label: "Null" },
+  { value: "Sequential", label: "Sequential" },
+  { value: "Parallel", label: "Parallel" },
+];
+
+const fieldTypes = [
+  { value: "string", label: "String" },
+  { value: "long", label: "Long" },
+  { value: "boolean", label: "Boolean" },
+  { value: "date", label: "Date" },
+  { value: "enum", label: "Enum" },
+];
+
+const eventTypes = [
+  { value: "start", label: "Start" },
+  { value: "end", label: "End" },
+  { value: "take", label: "Take" },
+  { value: "create", label: "Create" },
+  { value: "assignment", label: "Assignment" },
+  { value: "complete", label: "Complete" },
+];
+
+const listenerTypes = [
+  { value: "class", label: "Java Class" },
+  { value: "expression", label: "Expression" },
+  { value: "delegateExpression", label: "Delegate Expression" },
 ];
 
 export default function PropertiesPanel({ selectedElement }: PropertiesPanelProps) {
+  const [elementId, setElementId] = useState("");
   const [elementName, setElementName] = useState("");
-  const [elementDescription, setElementDescription] = useState("");
-  const [assignee, setAssignee] = useState("");
-  const [priority, setPriority] = useState("medium");
-  const [dueDate, setDueDate] = useState("");
-  const [isAsync, setIsAsync] = useState(false);
-  const [formFields, setFormFields] = useState<Array<{id: string, name: string, type: string, required: boolean}>>([]);
+  const [loopCharacteristics, setLoopCharacteristics] = useState("Null");
+  const [assignee, setAssignee] = useState("unassigned");
   const [candidateGroups, setCandidateGroups] = useState("");
-  const [candidateUsers, setCandidateUsers] = useState("");
+  const [formKey, setFormKey] = useState("");
+  const [formFields, setFormFields] = useState<FormField[]>([]);
+  const [listeners, setListeners] = useState<Listener[]>([]);
+  const [extensionProperties, setExtensionProperties] = useState<ExtensionProperty[]>([]);
+  
+  // Collapsible section states
+  const [informationOpen, setInformationOpen] = useState(true);
+  const [assignmentOpen, setAssignmentOpen] = useState(true);
+  const [listenersOpen, setListenersOpen] = useState(false);
+  const [formInfoOpen, setFormInfoOpen] = useState(false);
+  const [extensionOpen, setExtensionOpen] = useState(false);
 
   useEffect(() => {
     if (selectedElement) {
       const businessObject = selectedElement.businessObject;
+      setElementId(selectedElement.id || "");
       setElementName(businessObject.name || "");
-      setElementDescription(businessObject.documentation?.[0]?.text || "");
       setAssignee(businessObject.assignee || "unassigned");
-      setPriority(businessObject.priority || "medium");
-      setDueDate(businessObject.dueDate || "");
-      setIsAsync(businessObject.asyncBefore || false);
       setCandidateGroups(businessObject.candidateGroups || "");
-      setCandidateUsers(businessObject.candidateUsers || "");
+      setFormKey(businessObject.formKey || "");
+      setLoopCharacteristics(businessObject.loopCharacteristics ? "Sequential" : "Null");
       
-      // Parse form fields if they exist
-      if (businessObject.formFields) {
-        try {
-          setFormFields(JSON.parse(businessObject.formFields));
-        } catch {
-          setFormFields([]);
-        }
-      } else {
+      // Parse stored data
+      try {
+        setFormFields(businessObject.formFields ? JSON.parse(businessObject.formFields) : []);
+        setListeners(businessObject.listeners ? JSON.parse(businessObject.listeners) : []);
+        setExtensionProperties(businessObject.extensionProperties ? JSON.parse(businessObject.extensionProperties) : []);
+      } catch {
         setFormFields([]);
+        setListeners([]);
+        setExtensionProperties([]);
       }
     } else {
+      setElementId("");
       setElementName("");
-      setElementDescription("");
       setAssignee("unassigned");
-      setPriority("medium");
-      setDueDate("");
-      setIsAsync(false);
-      setFormFields([]);
       setCandidateGroups("");
-      setCandidateUsers("");
+      setFormKey("");
+      setLoopCharacteristics("Null");
+      setFormFields([]);
+      setListeners([]);
+      setExtensionProperties([]);
     }
   }, [selectedElement]);
 
-  const handleNameChange = (value: string) => {
-    setElementName(value);
-    // In a real implementation, this would update the BPMN element
+  const updateBusinessObject = (property: string, value: any) => {
     if (selectedElement?.businessObject) {
-      selectedElement.businessObject.name = value;
-    }
-  };
-
-  const handleDescriptionChange = (value: string) => {
-    setElementDescription(value);
-    // In a real implementation, this would update the BPMN element documentation
-  };
-
-  const handleAssigneeChange = (value: string) => {
-    setAssignee(value);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.assignee = value;
-    }
-  };
-
-  const handlePriorityChange = (value: string) => {
-    setPriority(value);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.priority = value;
-    }
-  };
-
-  const handleDueDateChange = (value: string) => {
-    setDueDate(value);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.dueDate = value;
-    }
-  };
-
-  const handleAsyncChange = (checked: boolean) => {
-    setIsAsync(checked);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.asyncBefore = checked;
+      selectedElement.businessObject[property] = value;
     }
   };
 
   const addFormField = () => {
-    const newField = {
+    const newField: FormField = {
       id: `field_${Date.now()}`,
       name: "",
-      type: "string",
-      required: false
+      type: "string"
     };
     const updatedFields = [...formFields, newField];
     setFormFields(updatedFields);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.formFields = JSON.stringify(updatedFields);
-    }
+    updateBusinessObject('formFields', JSON.stringify(updatedFields));
   };
 
   const removeFormField = (index: number) => {
     const updatedFields = formFields.filter((_, i) => i !== index);
     setFormFields(updatedFields);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.formFields = JSON.stringify(updatedFields);
-    }
+    updateBusinessObject('formFields', JSON.stringify(updatedFields));
   };
 
-  const updateFormField = (index: number, field: string, value: any) => {
+  const updateFormField = (index: number, field: keyof FormField, value: string) => {
     const updatedFields = [...formFields];
     updatedFields[index] = { ...updatedFields[index], [field]: value };
     setFormFields(updatedFields);
-    if (selectedElement?.businessObject) {
-      selectedElement.businessObject.formFields = JSON.stringify(updatedFields);
-    }
+    updateBusinessObject('formFields', JSON.stringify(updatedFields));
+  };
+
+  const addListener = () => {
+    const newListener: Listener = {
+      index: `${listeners.length}`,
+      event: "start",
+      type: "class",
+      value: "",
+      actions: ""
+    };
+    const updatedListeners = [...listeners, newListener];
+    setListeners(updatedListeners);
+    updateBusinessObject('listeners', JSON.stringify(updatedListeners));
+  };
+
+  const removeListener = (index: number) => {
+    const updatedListeners = listeners.filter((_, i) => i !== index);
+    setListeners(updatedListeners);
+    updateBusinessObject('listeners', JSON.stringify(updatedListeners));
+  };
+
+  const updateListener = (index: number, field: keyof Listener, value: string) => {
+    const updatedListeners = [...listeners];
+    updatedListeners[index] = { ...updatedListeners[index], [field]: value };
+    setListeners(updatedListeners);
+    updateBusinessObject('listeners', JSON.stringify(updatedListeners));
+  };
+
+  const addExtensionProperty = () => {
+    const newProperty: ExtensionProperty = {
+      index: `${extensionProperties.length}`,
+      name: "",
+      value: "",
+      actions: ""
+    };
+    const updatedProperties = [...extensionProperties, newProperty];
+    setExtensionProperties(updatedProperties);
+    updateBusinessObject('extensionProperties', JSON.stringify(updatedProperties));
+  };
+
+  const removeExtensionProperty = (index: number) => {
+    const updatedProperties = extensionProperties.filter((_, i) => i !== index);
+    setExtensionProperties(updatedProperties);
+    updateBusinessObject('extensionProperties', JSON.stringify(updatedProperties));
+  };
+
+  const updateExtensionProperty = (index: number, field: keyof ExtensionProperty, value: string) => {
+    const updatedProperties = [...extensionProperties];
+    updatedProperties[index] = { ...updatedProperties[index], [field]: value };
+    setExtensionProperties(updatedProperties);
+    updateBusinessObject('extensionProperties', JSON.stringify(updatedProperties));
   };
 
   if (!selectedElement) {
@@ -157,62 +212,57 @@ export default function PropertiesPanel({ selectedElement }: PropertiesPanelProp
 
   const elementType = selectedElement.type || "Unknown";
   const isUserTask = elementType === "bpmn:UserTask";
-  const isServiceTask = elementType === "bpmn:ServiceTask";
-  const isTask = isUserTask || isServiceTask || elementType === "bpmn:Task";
 
   return (
-    <div className="space-y-4 max-h-full overflow-y-auto">
-      <div className="pb-4 border-b border-gray-200">
-        <h4 className="font-medium text-gray-900">{elementType.replace("bpmn:", "")}</h4>
-        <p className="text-sm text-gray-500">Element ID: {selectedElement.id}</p>
+    <div className="h-full bg-white">
+      {/* Header */}
+      <div className="bg-blue-500 text-white p-3 text-center font-medium">
+        {elementType.replace("bpmn:", "")}
       </div>
 
-      {/* Basic Properties */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Basic Properties</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="element-name">Element Name</Label>
-            <Input
-              id="element-name"
-              value={elementName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Enter element name"
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="element-description">Description</Label>
-            <Textarea
-              id="element-description"
-              value={elementDescription}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
-              placeholder="Enter description"
-              rows={3}
-              className="mt-1"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Task-specific Properties */}
-      {isTask && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Task Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="overflow-y-auto h-full pb-16">
+        {/* Information Section */}
+        <Collapsible open={informationOpen} onOpenChange={setInformationOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 border-b hover:bg-gray-100">
+            <span className="font-medium text-sm">Information</span>
+            {informationOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-3 space-y-3">
             <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={handlePriorityChange}>
-                <SelectTrigger className="mt-1">
+              <Label className="text-xs text-gray-600">Element ID</Label>
+              <Input
+                value={elementId}
+                onChange={(e) => {
+                  setElementId(e.target.value);
+                  // Note: ID changes require special handling in BPMN.js
+                }}
+                className="mt-1 text-sm"
+                readOnly
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-600">Element Name</Label>
+              <Input
+                value={elementName}
+                onChange={(e) => {
+                  setElementName(e.target.value);
+                  updateBusinessObject('name', e.target.value);
+                }}
+                className="mt-1 text-sm"
+                placeholder="This is a test task"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-600">Loop Characteristics</Label>
+              <Select value={loopCharacteristics} onValueChange={(value) => {
+                setLoopCharacteristics(value);
+                updateBusinessObject('loopCharacteristics', value !== "Null");
+              }}>
+                <SelectTrigger className="mt-1 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {priorityOptions.map((option) => (
+                  {loopOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -220,228 +270,282 @@ export default function PropertiesPanel({ selectedElement }: PropertiesPanelProp
                 </SelectContent>
               </Select>
             </div>
+          </CollapsibleContent>
+        </Collapsible>
 
-            <div>
-              <Label htmlFor="due-date">Due Date</Label>
-              <Input
-                id="due-date"
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => handleDueDateChange(e.target.value)}
-                className="mt-1"
-              />
-            </div>
+        {/* User Assignment Section */}
+        {isUserTask && (
+          <Collapsible open={assignmentOpen} onOpenChange={setAssignmentOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 border-b hover:bg-gray-100">
+              <span className="font-medium text-sm">User Assignment</span>
+              {assignmentOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-3">
+              <div>
+                <Label className="text-xs text-gray-600">Assignee</Label>
+                <Select value={assignee} onValueChange={(value) => {
+                  setAssignee(value);
+                  updateBusinessObject('assignee', value === "unassigned" ? "" : value);
+                }}>
+                  <SelectTrigger className="mt-1 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assigneeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-600">Candidate Groups</Label>
+                <Input
+                  value={candidateGroups}
+                  onChange={(e) => {
+                    setCandidateGroups(e.target.value);
+                    updateBusinessObject('candidateGroups', e.target.value);
+                  }}
+                  className="mt-1 text-sm"
+                  placeholder="manager,finance"
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="async"
-                checked={isAsync}
-                onCheckedChange={handleAsyncChange}
-              />
-              <Label htmlFor="async">Asynchronous execution</Label>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* User Task specific Properties */}
-      {isUserTask && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Assignment</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select value={assignee} onValueChange={handleAssigneeChange}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {assigneeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="candidate-groups">Candidate Groups</Label>
-              <Input
-                id="candidate-groups"
-                value={candidateGroups}
-                onChange={(e) => setCandidateGroups(e.target.value)}
-                placeholder="manager,finance"
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Comma-separated group names</p>
-            </div>
-
-            <div>
-              <Label htmlFor="candidate-users">Candidate Users</Label>
-              <Input
-                id="candidate-users"
-                value={candidateUsers}
-                onChange={(e) => setCandidateUsers(e.target.value)}
-                placeholder="john.doe,jane.smith"
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Comma-separated usernames</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Form Fields for User Tasks */}
-      {isUserTask && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center justify-between">
-              Form Fields
-              <Button size="sm" variant="outline" onClick={addFormField}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Field
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {formFields.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
-                No form fields defined. Click "Add Field" to create one.
-              </p>
+        {/* Listeners Section */}
+        <Collapsible open={listenersOpen} onOpenChange={setListenersOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 border-b hover:bg-gray-100">
+            <span className="font-medium text-sm">Listeners</span>
+            {listenersOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-3">
+            {listeners.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-500 mb-3">No Data</p>
+                <Button
+                  onClick={addListener}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                >
+                  + Add
+                </Button>
+              </div>
             ) : (
               <div className="space-y-3">
-                {formFields.map((field, index) => (
-                  <div key={field.id} className="p-3 border border-gray-200 rounded-md">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline">{field.type}</Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeFormField(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-2">
+                <div className="grid grid-cols-5 gap-2 text-xs text-gray-600 font-medium border-b pb-2">
+                  <span>Index</span>
+                  <span>Event</span>
+                  <span>Type</span>
+                  <span>Value</span>
+                  <span>Actions</span>
+                </div>
+                {listeners.map((listener, index) => (
+                  <div key={index} className="grid grid-cols-5 gap-2 text-xs">
+                    <Input
+                      value={listener.index}
+                      onChange={(e) => updateListener(index, 'index', e.target.value)}
+                      className="text-xs"
+                    />
+                    <Select value={listener.event} onValueChange={(value) => updateListener(index, 'event', value)}>
+                      <SelectTrigger className="text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {eventTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={listener.type} onValueChange={(value) => updateListener(index, 'type', value)}>
+                      <SelectTrigger className="text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {listenerTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={listener.value}
+                      onChange={(e) => updateListener(index, 'value', e.target.value)}
+                      className="text-xs"
+                    />
+                    <Button
+                      onClick={() => removeListener(index)}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  onClick={addListener}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                >
+                  + Add
+                </Button>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Form Information Section */}
+        {isUserTask && (
+          <Collapsible open={formInfoOpen} onOpenChange={setFormInfoOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 border-b hover:bg-gray-100">
+              <span className="font-medium text-sm">Form Information</span>
+              {formInfoOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-3">
+              <div>
+                <Label className="text-xs text-gray-600">Form Key</Label>
+                <Input
+                  value={formKey}
+                  onChange={(e) => {
+                    setFormKey(e.target.value);
+                    updateBusinessObject('formKey', e.target.value);
+                  }}
+                  className="mt-1 text-sm"
+                  placeholder="next-Done"
+                />
+              </div>
+              
+              {formFields.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-xs text-gray-500 mb-3">No Data</p>
+                  <Button
+                    onClick={addFormField}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                  >
+                    + Add
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 font-medium border-b pb-2">
+                    <span>ID</span>
+                    <span>Type</span>
+                    <span>Name</span>
+                    <span>Actions</span>
+                  </div>
+                  {formFields.map((field, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-2 text-xs">
                       <Input
-                        placeholder="Field name"
-                        value={field.name}
-                        onChange={(e) => updateFormField(index, 'name', e.target.value)}
+                        value={field.id}
+                        onChange={(e) => updateFormField(index, 'id', e.target.value)}
+                        className="text-xs"
                       />
-                      
-                      <Select
-                        value={field.type}
-                        onValueChange={(value) => updateFormField(index, 'type', value)}
-                      >
-                        <SelectTrigger>
+                      <Select value={field.type} onValueChange={(value) => updateFormField(index, 'type', value)}>
+                        <SelectTrigger className="text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="string">Text</SelectItem>
-                          <SelectItem value="long">Number</SelectItem>
-                          <SelectItem value="boolean">Boolean</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="enum">Dropdown</SelectItem>
+                          {fieldTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={field.required}
-                          onCheckedChange={(checked) => updateFormField(index, 'required', checked)}
-                        />
-                        <Label className="text-sm">Required field</Label>
-                      </div>
+                      <Input
+                        value={field.name}
+                        onChange={(e) => updateFormField(index, 'name', e.target.value)}
+                        className="text-xs"
+                      />
+                      <Button
+                        onClick={() => removeFormField(index)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
+                  ))}
+                  <Button
+                    onClick={addFormField}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                  >
+                    + Add
+                  </Button>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Extension Group Properties Section */}
+        <Collapsible open={extensionOpen} onOpenChange={setExtensionOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 border-b hover:bg-gray-100">
+            <span className="font-medium text-sm">Extension Group Properties</span>
+            {extensionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-3">
+            {extensionProperties.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-500 mb-3">No Data</p>
+                <Button
+                  onClick={addExtensionProperty}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                >
+                  + Add
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 font-medium border-b pb-2">
+                  <span>Index</span>
+                  <span>Name</span>
+                  <span>Value</span>
+                  <span>Actions</span>
+                </div>
+                {extensionProperties.map((property, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2 text-xs">
+                    <Input
+                      value={property.index}
+                      onChange={(e) => updateExtensionProperty(index, 'index', e.target.value)}
+                      className="text-xs"
+                    />
+                    <Input
+                      value={property.name}
+                      onChange={(e) => updateExtensionProperty(index, 'name', e.target.value)}
+                      className="text-xs"
+                    />
+                    <Input
+                      value={property.value}
+                      onChange={(e) => updateExtensionProperty(index, 'value', e.target.value)}
+                      className="text-xs"
+                    />
+                    <Button
+                      onClick={() => removeExtensionProperty(index)}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
                 ))}
+                <Button
+                  onClick={addExtensionProperty}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2"
+                >
+                  + Add
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Service Task Properties */}
-      {isServiceTask && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Service Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="implementation">Implementation</Label>
-              <Select defaultValue="java-class">
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="java-class">Java Class</SelectItem>
-                  <SelectItem value="expression">Expression</SelectItem>
-                  <SelectItem value="delegate-expression">Delegate Expression</SelectItem>
-                  <SelectItem value="external">External Task</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="implementation-value">Implementation Value</Label>
-              <Input
-                id="implementation-value"
-                placeholder="com.example.MyDelegate"
-                className="mt-1"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Element Type Information */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Element Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {elementType === "bpmn:StartEvent" && (
-            <p className="text-sm text-gray-600">
-              Start events trigger the beginning of workflow processes. They can be triggered by timers, messages, or manual starts.
-            </p>
-          )}
-
-          {elementType === "bpmn:EndEvent" && (
-            <p className="text-sm text-gray-600">
-              End events mark the completion of workflow processes. They can produce results or send messages.
-            </p>
-          )}
-
-          {elementType === "bpmn:ExclusiveGateway" && (
-            <p className="text-sm text-gray-600">
-              Exclusive gateways route process flow based on conditions. Only one outgoing path is taken.
-            </p>
-          )}
-
-          {elementType === "bpmn:ParallelGateway" && (
-            <p className="text-sm text-gray-600">
-              Parallel gateways split process flow into multiple concurrent paths or merge them back together.
-            </p>
-          )}
-
-          {isUserTask && (
-            <p className="text-sm text-gray-600">
-              User tasks require human interaction. Assign them to users or groups and define forms for data collection.
-            </p>
-          )}
-
-          {isServiceTask && (
-            <p className="text-sm text-gray-600">
-              Service tasks execute automated operations like API calls, calculations, or system integrations.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     </div>
   );
 }
