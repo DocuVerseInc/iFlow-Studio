@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import WorkflowDesigner from "@/pages/workflow-designer";
 import TaskManagement from "@/pages/task-management";
 import AdminDashboard from "@/pages/admin-dashboard";
+import ApiIntegrations from "@/pages/api-integrations";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
 
@@ -19,6 +20,7 @@ function Router() {
           <Route path="/designer" component={WorkflowDesigner} />
           <Route path="/tasks" component={TaskManagement} />
           <Route path="/admin" component={AdminDashboard} />
+          <Route path="/integrations" component={ApiIntegrations} />
           <Route component={NotFound} />
         </Switch>
       </main>

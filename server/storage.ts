@@ -473,6 +473,7 @@ export class MemStorage implements IStorage {
       ...insertApiCall,
       id,
       requestHeaders: insertApiCall.requestHeaders || {},
+      requestBody: insertApiCall.requestBody || null,
       responseHeaders: insertApiCall.responseHeaders || null,
       responseBody: insertApiCall.responseBody || null,
       responseStatus: insertApiCall.responseStatus || null,

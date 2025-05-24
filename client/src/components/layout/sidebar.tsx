@@ -6,7 +6,8 @@ import {
   BarChart3, 
   Settings, 
   HelpCircle,
-  Workflow
+  Workflow,
+  Globe
 } from "lucide-react";
 
 const navigation = [
@@ -19,6 +20,11 @@ const navigation = [
     name: "Task Management", 
     href: "/tasks",
     icon: CheckSquare,
+  },
+  {
+    name: "API Integrations",
+    href: "/integrations",
+    icon: Globe,
   },
   {
     name: "Admin Dashboard",
