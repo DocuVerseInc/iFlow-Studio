@@ -1,33 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 240 15% 97%; /* #F6F8FB - Light blue-gray background */
-  --foreground: 215 25% 27%; /* #384153 - Dark gray text */
-  --muted: 240 10% 95%; /* #F1F4F7 - Subtle background */
-  --muted-foreground: 215 12% 55%; /* #7C8DB0 - Muted text */
+  --background: 0 0% 99%; /* #FCFCFC - Ultra light background like Truemove */
+  --foreground: 210 11% 15%; /* #1F2937 - Dark text */
+  --muted: 210 40% 98%; /* #F8FAFC - Very light gray */
+  --muted-foreground: 215 16% 47%; /* #64748B - Muted text */
   --popover: 0 0% 100%;
-  --popover-foreground: 215 25% 27%;
+  --popover-foreground: 210 11% 15%;
   --card: 0 0% 100%; /* Pure white cards */
-  --card-foreground: 215 25% 27%;
-  --border: 240 10% 90%; /* #E5E9ED - Subtle borders */
-  --input: 240 10% 90%;
-  --primary: 235 85% 64%; /* #5B7BF7 - Modern blue */
+  --card-foreground: 210 11% 15%;
+  --border: 214 32% 91%; /* #E2E8F0 - Light border */
+  --input: 214 32% 91%;
+  --primary: 262 83% 58%; /* #8B5CF6 - Purple accent like in reference */
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 8% 95%; /* #F4F6F8 - Light background */
-  --secondary-foreground: 215 25% 27%;
-  --accent: 235 85% 64%; /* Matching primary */
+  --secondary: 210 40% 98%; /* #F8FAFC - Light background */
+  --secondary-foreground: 210 11% 15%;
+  --accent: 262 83% 58%; /* Matching primary purple */
   --accent-foreground: 0 0% 100%;
-  --warning: 35 100% 55%; /* #FF8C00 - Orange */
+  --warning: 38 92% 50%; /* #F59E0B - Orange */
   --warning-foreground: 0 0% 100%;
-  --destructive: 0 85% 60%; /* #F56565 - Red */
+  --destructive: 0 84% 60%; /* #EF4444 - Red */
   --destructive-foreground: 0 0% 100%;
-  --success: 140 75% 45%; /* #22C55E - Green */
+  --success: 142 76% 36%; /* #059669 - Green */
   --success-foreground: 0 0% 100%;
-  --ring: 235 85% 64%;
-  --radius: 0.75rem; /* Larger radius for modern look */
-  --surface: 240 15% 97%;
+  --ring: 262 83% 58%;
+  --radius: 0.5rem; /* Smaller radius like Truemove */
+  --surface: 0 0% 99%;
 }
 
 .dark {
@@ -61,39 +63,44 @@
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
+    @apply antialiased text-foreground;
     background: hsl(var(--background));
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 14px;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer components {
   .card-modern {
-    @apply bg-white rounded-xl border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300;
-    backdrop-filter: blur(8px);
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200;
+    font-size: 14px;
   }
   
   .card-gradient {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: #ffffff;
     border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   }
   
   .btn-primary-modern {
-    @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+    @apply bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 rounded-md text-sm transition-all duration-200;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
   
   .btn-secondary-modern {
-    @apply bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-medium px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+    @apply bg-white border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-4 py-2 rounded-md text-sm transition-all duration-200;
   }
   
   .sidebar-modern {
-    @apply bg-white/90 backdrop-blur-sm border-r border-gray-200/60;
+    @apply bg-white border-r border-gray-200;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   }
   
   .header-modern {
-    @apply bg-white/95 backdrop-blur-sm border-b border-gray-200/60;
+    @apply bg-white border-b border-gray-200;
   }
   
   .stat-card {

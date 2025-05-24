@@ -56,27 +56,27 @@ export default function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col">
+    <aside className="w-64 sidebar-modern flex-shrink-0 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="px-6 py-5 border-b border-gray-200">
         <SynapseLogo size="md" showText={true} className="justify-start" />
-        <p className="text-sm text-gray-500 mt-1 ml-11">iFlow Engine</p>
+        <p className="text-xs text-gray-500 mt-2 ml-11 font-medium">iFlow Engine</p>
       </div>
       
       {/* Main Navigation */}
-      <nav className="p-4 space-y-2 flex-1">
+      <nav className="px-3 py-4 space-y-1 flex-1">
         {navigation.map((item) => {
           const isActive = location === item.href || (item.href === "/designer" && location === "/");
           
           return (
             <Link key={item.name} href={item.href}>
               <a className={cn(
-                "flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors",
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 isActive 
                   ? "bg-primary text-white" 
                   : "text-gray-700 hover:bg-gray-100"
               )}>
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-4 w-4" />
                 <span>{item.name}</span>
               </a>
             </Link>
