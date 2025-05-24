@@ -19,6 +19,12 @@ import { z } from "zod";
 
 const createVersionSchema = insertWorkflowVersionSchema.extend({
   workflowId: z.number(),
+}).refine((data) => {
+  // This will be checked during form submission
+  return true;
+}, {
+  message: "Version already exists for this workflow",
+  path: ["version"],
 });
 
 const createDeploymentSchema = insertDeploymentPipelineSchema.extend({
@@ -77,10 +83,9 @@ export default function WorkflowVersions() {
     queryKey: ['/api/workflows'],
   });
 
-  // Fetch versions for selected workflow
-  const { data: versions = [] } = useQuery({
-    queryKey: ['/api/workflows', selectedWorkflowId, 'versions'],
-    enabled: !!selectedWorkflowId,
+  // Fetch all versions
+  const { data: allVersions = [] } = useQuery({
+    queryKey: ['/api/workflow-versions'],
   });
 
   // Fetch deployment pipelines
@@ -169,7 +174,7 @@ export default function WorkflowVersions() {
     versionForm.setValue('workflowId', workflowId);
     
     // Get versions for this workflow and suggest next version
-    const workflowVersions = versions.filter((v: any) => v.workflowId === workflowId);
+    const workflowVersions = (allVersions as any[]).filter((v: any) => v.workflowId === workflowId);
     const nextVersion = getNextVersion(workflowVersions);
     versionForm.setValue('version', nextVersion);
   };
@@ -185,6 +190,17 @@ export default function WorkflowVersions() {
   });
 
   const onVersionSubmit = (data: z.infer<typeof createVersionSchema>) => {
+    // Check for duplicate version
+    const workflowVersions = (allVersions as any[]).filter((v: any) => v.workflowId === data.workflowId);
+    const isDuplicate = workflowVersions.some((v: any) => v.version === data.version);
+    
+    if (isDuplicate) {
+      versionForm.setError('version', {
+        message: 'This version already exists for the selected workflow'
+      });
+      return;
+    }
+    
     createVersionMutation.mutate(data);
   };
 
@@ -406,12 +422,14 @@ export default function WorkflowVersions() {
 
               {selectedWorkflowId && (
                 <div className="space-y-3">
-                  {versions.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      No versions found for this workflow
-                    </p>
-                  ) : (
-                    versions.map((version: any) => (
+                  {(() => {
+                    const workflowVersions = (allVersions as any[]).filter((v: any) => v.workflowId === selectedWorkflowId);
+                    return workflowVersions.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        No versions found for this workflow
+                      </p>
+                    ) : (
+                      workflowVersions.map((version: any) => (
                       <div key={version.id} className="border rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -431,8 +449,9 @@ export default function WorkflowVersions() {
                           Created {new Date(version.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                    ))
-                  )}
+                      ))
+                    );
+                  })()}
                 </div>
               )}
             </div>
