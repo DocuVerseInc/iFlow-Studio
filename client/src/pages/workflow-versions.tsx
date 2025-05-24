@@ -25,6 +25,47 @@ const createDeploymentSchema = insertDeploymentPipelineSchema.extend({
   workflowId: z.number(),
 });
 
+// Function to generate next version number
+function getNextVersion(existingVersions: any[]): string {
+  if (!existingVersions || existingVersions.length === 0) {
+    return "1.0.0";
+  }
+  
+  // Sort versions and get the latest
+  const sortedVersions = existingVersions
+    .map(v => v.version)
+    .filter(v => v && typeof v === 'string')
+    .sort((a, b) => {
+      const aParts = a.split('.').map(Number);
+      const bParts = b.split('.').map(Number);
+      
+      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+        const aPart = aParts[i] || 0;
+        const bPart = bParts[i] || 0;
+        if (aPart !== bPart) return bPart - aPart;
+      }
+      return 0;
+    });
+  
+  if (sortedVersions.length === 0) {
+    return "1.0.0";
+  }
+  
+  const latestVersion = sortedVersions[0];
+  const parts = latestVersion.split('.').map(Number);
+  
+  // Increment patch version by default
+  if (parts.length >= 3) {
+    parts[2] += 1;
+  } else if (parts.length === 2) {
+    parts.push(1);
+  } else {
+    parts.push(0, 1);
+  }
+  
+  return parts.join('.');
+}
+
 export default function WorkflowVersions() {
   const { toast } = useToast();
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
@@ -122,6 +163,16 @@ export default function WorkflowVersions() {
       createdBy: "current_user",
     },
   });
+
+  // Auto-populate version when workflow is selected
+  const handleWorkflowSelection = (workflowId: number) => {
+    versionForm.setValue('workflowId', workflowId);
+    
+    // Get versions for this workflow and suggest next version
+    const workflowVersions = versions.filter((v: any) => v.workflowId === workflowId);
+    const nextVersion = getNextVersion(workflowVersions);
+    versionForm.setValue('version', nextVersion);
+  };
 
   const deploymentForm = useForm<z.infer<typeof createDeploymentSchema>>({
     resolver: zodResolver(createDeploymentSchema),
