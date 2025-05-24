@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import BpmnModeler from "@/components/workflow/bpmn-modeler";
 import PropertiesPanel from "@/components/workflow/properties-panel";
-import { Download, Upload, Save, Play, UserCheck, GitBranch, Square } from "lucide-react";
+import { Download, Upload, Save, Play, UserCheck, GitBranch, Square, FolderOpen, Plus, Edit } from "lucide-react";
 import type { InsertWorkflow } from "@shared/schema";
 
 export default function WorkflowDesigner() {
@@ -17,15 +18,25 @@ export default function WorkflowDesigner() {
   const [workflowDescription, setWorkflowDescription] = useState("");
   const [bpmnXml, setBpmnXml] = useState("");
   const [selectedElement, setSelectedElement] = useState<any>(null);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
+  const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
+  const [isNewWorkflow, setIsNewWorkflow] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch saved workflows for loading
+  const { data: savedWorkflows = [] } = useQuery({
+    queryKey: ['/api/workflows'],
+  });
 
   const saveWorkflowMutation = useMutation({
     mutationFn: async (workflow: InsertWorkflow) => {
       const response = await apiRequest("POST", "/api/workflows", workflow);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setCurrentWorkflowId(data.id);
+      setIsNewWorkflow(false);
       toast({
         title: "Success",
         description: "Workflow saved successfully",
@@ -36,6 +47,27 @@ export default function WorkflowDesigner() {
       toast({
         title: "Error",
         description: "Failed to save workflow",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateWorkflowMutation = useMutation({
+    mutationFn: async ({ id, workflow }: { id: number; workflow: Partial<InsertWorkflow> }) => {
+      const response = await apiRequest("PUT", `/api/workflows/${id}`, workflow);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Workflow updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/workflows"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update workflow",
         variant: "destructive",
       });
     },
@@ -60,12 +92,55 @@ export default function WorkflowDesigner() {
       return;
     }
 
-    saveWorkflowMutation.mutate({
-      name: workflowName,
-      description: workflowDescription,
-      bpmnXml: bpmnXml,
-      version: 1,
-      isActive: true,
+    if (isNewWorkflow || !currentWorkflowId) {
+      // Create new workflow
+      saveWorkflowMutation.mutate({
+        name: workflowName,
+        description: workflowDescription,
+        bpmnXml: bpmnXml,
+        version: "1.0",
+      });
+    } else {
+      // Update existing workflow
+      updateWorkflowMutation.mutate({ 
+        id: currentWorkflowId, 
+        workflow: {
+          name: workflowName,
+          description: workflowDescription,
+          bpmnXml: bpmnXml,
+        }
+      });
+    }
+  };
+
+  const handleLoadWorkflow = (workflowId: string) => {
+    const workflow = savedWorkflows.find((w: any) => w.id.toString() === workflowId);
+    if (workflow) {
+      setWorkflowName(workflow.name);
+      setWorkflowDescription(workflow.description);
+      setBpmnXml(workflow.bpmnXml);
+      setCurrentWorkflowId(workflow.id);
+      setIsNewWorkflow(false);
+      setIsLoadDialogOpen(false);
+      
+      toast({
+        title: "Success",
+        description: `Loaded workflow: ${workflow.name}`,
+      });
+    }
+  };
+
+  const handleNewWorkflow = () => {
+    setWorkflowName("");
+    setWorkflowDescription("");
+    setBpmnXml("");
+    setCurrentWorkflowId(null);
+    setIsNewWorkflow(true);
+    setSelectedElement(null);
+    
+    toast({
+      title: "New Workflow",
+      description: "Started a new workflow",
     });
   };
 
@@ -118,6 +193,45 @@ export default function WorkflowDesigner() {
             <p className="text-gray-600 mt-1">Create and edit BPMN workflows visually</p>
           </div>
           <div className="flex items-center space-x-3">
+            <Button onClick={handleNewWorkflow} variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              New
+            </Button>
+            
+            <Dialog open={isLoadDialogOpen} onOpenChange={setIsLoadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  Load
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Load Saved Workflow</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="workflow-select">Select a workflow to load:</Label>
+                    <Select onValueChange={handleLoadWorkflow}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a workflow..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {savedWorkflows.map((workflow: any) => (
+                          <SelectItem key={workflow.id} value={workflow.id.toString()}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{workflow.name}</span>
+                              <span className="text-sm text-gray-500">{workflow.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Export
@@ -138,10 +252,15 @@ export default function WorkflowDesigner() {
             </label>
             <Button 
               onClick={handleSaveWorkflow}
-              disabled={saveWorkflowMutation.isPending}
+              disabled={saveWorkflowMutation.isPending || updateWorkflowMutation.isPending}
+              className={isNewWorkflow ? "" : "bg-blue-600 hover:bg-blue-700"}
             >
               <Save className="mr-2 h-4 w-4" />
-              {saveWorkflowMutation.isPending ? "Saving..." : "Save Workflow"}
+              {saveWorkflowMutation.isPending || updateWorkflowMutation.isPending 
+                ? "Saving..." 
+                : isNewWorkflow 
+                ? "Save Workflow" 
+                : "Update Workflow"}
             </Button>
           </div>
         </div>
