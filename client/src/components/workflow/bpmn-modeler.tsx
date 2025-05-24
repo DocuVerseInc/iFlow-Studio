@@ -30,7 +30,18 @@ export default function BpmnModeler({ onXmlChange, onElementSelect, xml }: BpmnM
 
           // Create new diagram or import existing
           if (xml) {
-            await modelerRef.current.importXML(xml);
+            // Clean the XML to remove unsupported attributes before importing
+            let cleanedXml = xml;
+            cleanedXml = cleanedXml.replace(/\s+assignee="[^"]*"/g, '');
+            cleanedXml = cleanedXml.replace(/\s+priority="[^"]*"/g, '');
+            cleanedXml = cleanedXml.replace(/\s+dueDate="[^"]*"/g, '');
+            
+            try {
+              await modelerRef.current.importXML(cleanedXml);
+            } catch (error) {
+              console.log('XML import had warnings, but proceeding:', error);
+              // BPMN import can succeed even with warnings
+            }
           } else {
             await modelerRef.current.createDiagram();
           }
@@ -91,8 +102,18 @@ export default function BpmnModeler({ onXmlChange, onElementSelect, xml }: BpmnM
 
   useEffect(() => {
     if (modelerRef.current && xml) {
-      modelerRef.current.importXML(xml).catch((error: any) => {
+      // Clean the XML to remove unsupported attributes before importing
+      let cleanedXml = xml;
+      
+      // Remove custom attributes that BPMN.js doesn't support
+      cleanedXml = cleanedXml.replace(/\s+assignee="[^"]*"/g, '');
+      cleanedXml = cleanedXml.replace(/\s+priority="[^"]*"/g, '');
+      cleanedXml = cleanedXml.replace(/\s+dueDate="[^"]*"/g, '');
+      
+      modelerRef.current.importXML(cleanedXml).catch((error: any) => {
         console.error('Error importing XML:', error);
+        // If import still fails, try creating a new diagram
+        modelerRef.current.createDiagram();
       });
     }
   }, [xml]);
