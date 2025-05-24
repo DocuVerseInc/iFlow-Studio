@@ -14,7 +14,7 @@ interface PropertiesPanelProps {
 }
 
 const assigneeOptions = [
-  { value: "", label: "Select assignee..." },
+  { value: "unassigned", label: "Select assignee..." },
   { value: "john.doe", label: "John Doe" },
   { value: "jane.smith", label: "Jane Smith" },
   { value: "mike.johnson", label: "Mike Johnson" },
@@ -45,7 +45,7 @@ export default function PropertiesPanel({ selectedElement }: PropertiesPanelProp
       const businessObject = selectedElement.businessObject;
       setElementName(businessObject.name || "");
       setElementDescription(businessObject.documentation?.[0]?.text || "");
-      setAssignee(businessObject.assignee || "");
+      setAssignee(businessObject.assignee || "unassigned");
       setPriority(businessObject.priority || "medium");
       setDueDate(businessObject.dueDate || "");
       setIsAsync(businessObject.asyncBefore || false);
@@ -65,7 +65,7 @@ export default function PropertiesPanel({ selectedElement }: PropertiesPanelProp
     } else {
       setElementName("");
       setElementDescription("");
-      setAssignee("");
+      setAssignee("unassigned");
       setPriority("medium");
       setDueDate("");
       setIsAsync(false);
