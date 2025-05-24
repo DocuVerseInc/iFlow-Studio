@@ -82,10 +82,17 @@ export default function WorkflowVersions() {
   // Create deployment mutation
   const createDeploymentMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createDeploymentSchema>) => {
-      return apiRequest('/api/deployments', {
+      const response = await fetch('/api/deployments', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        throw new Error('Failed to create deployment');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/deployments'] });
