@@ -248,8 +248,8 @@ export default function WorkflowDesigner() {
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Workflow Designer</h2>
-            <p className="text-gray-600 mt-1">Create and edit BPMN workflows visually</p>
+            <h2 className="text-2xl font-bold text-gray-900">iFlow Designer</h2>
+            <p className="text-gray-600 mt-1">Create and edit BPMN iFlows visually</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button onClick={handleNewWorkflow} variant="outline">
@@ -270,10 +270,10 @@ export default function WorkflowDesigner() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="workflow-select">Select a workflow to load:</Label>
+                    <Label htmlFor="workflow-select">Select an iFlow to load:</Label>
                     <Select onValueChange={handleLoadWorkflow}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose a workflow..." />
+                        <SelectValue placeholder="Choose an iFlow..." />
                       </SelectTrigger>
                       <SelectContent>
                         {savedWorkflows.map((workflow: any) => (
