@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useWebSocket() {
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -14,6 +15,7 @@ export function useWebSocket() {
       
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
+        setIsConnected(true);
       };
       
       wsRef.current.onmessage = (event) => {
@@ -56,12 +58,14 @@ export function useWebSocket() {
       
       wsRef.current.onclose = () => {
         console.log("WebSocket disconnected, attempting to reconnect...");
+        setIsConnected(false);
         // Reconnect after 3 seconds
         setTimeout(connect, 3000);
       };
       
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
+        setIsConnected(false);
       };
     };
     
@@ -71,8 +75,12 @@ export function useWebSocket() {
       if (wsRef.current) {
         wsRef.current.close();
       }
+      setIsConnected(false);
     };
   }, [queryClient]);
 
-  return wsRef.current;
+  return {
+    socket: wsRef.current,
+    isConnected
+  };
 }
