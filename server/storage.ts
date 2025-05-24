@@ -26,6 +26,17 @@ export interface IStorage {
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
   updateWorkflow(id: number, workflow: Partial<InsertWorkflow>): Promise<Workflow | undefined>;
   deleteWorkflow(id: number): Promise<boolean>;
+  
+  // Workflow versioning
+  getWorkflowVersions(workflowId: number): Promise<WorkflowVersion[]>;
+  createWorkflowVersion(version: InsertWorkflowVersion): Promise<WorkflowVersion>;
+  getWorkflowVersion(id: number): Promise<WorkflowVersion | undefined>;
+  
+  // Deployment pipeline
+  getDeploymentPipelines(workflowId?: number): Promise<DeploymentPipeline[]>;
+  createDeploymentPipeline(deployment: InsertDeploymentPipeline): Promise<DeploymentPipeline>;
+  updateDeploymentPipeline(id: number, deployment: Partial<InsertDeploymentPipeline>): Promise<DeploymentPipeline | undefined>;
+  getDeploymentPipeline(id: number): Promise<DeploymentPipeline | undefined>;
 
   // Workflow instance operations
   getWorkflowInstances(): Promise<WorkflowInstance[]>;
@@ -67,11 +78,15 @@ export class MemStorage implements IStorage {
   private tasks: Map<number, Task>;
   private apiIntegrations: Map<number, ApiIntegration>;
   private apiCalls: Map<number, ApiCall>;
+  private workflowVersions: Map<number, WorkflowVersion>;
+  private deploymentPipelines: Map<number, DeploymentPipeline>;
   private currentWorkflowId: number;
   private currentInstanceId: number;
   private currentTaskId: number;
   private currentIntegrationId: number;
   private currentApiCallId: number;
+  private currentVersionId: number;
+  private currentDeploymentId: number;
   private recentActivity: AdminMetrics['recentActivity'];
 
   constructor() {

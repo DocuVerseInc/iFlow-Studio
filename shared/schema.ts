@@ -7,8 +7,13 @@ export const workflows = pgTable("workflows", {
   name: text("name").notNull(),
   description: text("description"),
   bpmnXml: text("bpmn_xml").notNull(),
-  version: integer("version").notNull().default(1),
+  version: text("version").notNull().default("1.0.0"),
   isActive: boolean("is_active").notNull().default(true),
+  isLatest: boolean("is_latest").notNull().default(true),
+  parentWorkflowId: integer("parent_workflow_id"),
+  deploymentStatus: text("deployment_status").notNull().default("not_deployed"), // not_deployed, deploying, deployed, deployment_failed
+  deployedAt: timestamp("deployed_at"),
+  deployedBy: text("deployed_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -129,6 +134,53 @@ export type ApiIntegration = typeof apiIntegrations.$inferSelect;
 export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
 export type ApiCall = typeof apiCalls.$inferSelect;
 
+// Deployment Pipeline types
+export const deploymentPipeline = pgTable("deployment_pipeline", {
+  id: serial("id").primaryKey(),
+  workflowId: integer("workflow_id").notNull(),
+  version: text("version").notNull(),
+  environment: text("environment").notNull(), // development, staging, production
+  status: text("status").notNull().default("pending"), // pending, running, success, failed, cancelled
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  deployedBy: text("deployed_by").notNull(),
+  deploymentLogs: text("deployment_logs"),
+  rollbackVersion: text("rollback_version"),
+  approvals: jsonb("approvals").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const workflowVersions = pgTable("workflow_versions", {
+  id: serial("id").primaryKey(),
+  workflowId: integer("workflow_id").notNull(),
+  version: text("version").notNull(),
+  bpmnXml: text("bpmn_xml").notNull(),
+  changeLog: text("change_log"),
+  status: text("status").notNull().default("draft"), // draft, deployed, archived
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDeploymentPipelineSchema = createInsertSchema(deploymentPipeline).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkflowVersionSchema = createInsertSchema(workflowVersions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDeploymentPipeline = z.infer<typeof insertDeploymentPipelineSchema>;
+export type DeploymentPipeline = typeof deploymentPipeline.$inferSelect;
+
+export type InsertWorkflowVersion = z.infer<typeof insertWorkflowVersionSchema>;
+export type WorkflowVersion = typeof workflowVersions.$inferSelect;
+
 export type AdminMetrics = {
   activeWorkflows: number;
   pendingTasks: number;
@@ -136,8 +188,10 @@ export type AdminMetrics = {
   systemHealth: number;
   apiCallsToday: number;
   failedApiCalls: number;
+  deploymentsToday: number;
+  failedDeployments: number;
   recentActivity: {
-    type: 'workflow_completed' | 'task_assigned' | 'workflow_deployed' | 'workflow_failed' | 'api_call_success' | 'api_call_failed';
+    type: 'workflow_completed' | 'task_assigned' | 'workflow_deployed' | 'workflow_failed' | 'api_call_success' | 'api_call_failed' | 'deployment_started' | 'deployment_completed' | 'deployment_failed';
     message: string;
     timestamp: Date;
   }[];
