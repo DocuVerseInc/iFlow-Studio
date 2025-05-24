@@ -136,7 +136,7 @@ export default function WorkflowDesigner() {
         name: workflowName,
         description: workflowDescription,
         bpmnXml: bpmnXml,
-        version: 1,
+        version: "1.0",
       });
     } else {
       // Update existing workflow
