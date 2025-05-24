@@ -59,7 +59,7 @@ export default function WorkflowTable({ workflows }: WorkflowTableProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Active Workflows</CardTitle>
+          <CardTitle>Active iFlows</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">

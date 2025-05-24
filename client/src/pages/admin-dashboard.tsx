@@ -54,8 +54,8 @@ export default function AdminDashboard() {
       <header className="header-modern px-8 py-6 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Task Workflow</h1>
-            <p className="text-gray-600 font-medium">Monitor workflow performance and system health</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">iFlow Dashboard</h1>
+            <p className="text-gray-600 font-medium">Monitor iFlow performance and system health</p>
           </div>
           <div className="flex items-center space-x-4">
             <Select defaultValue="24h">

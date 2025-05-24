@@ -266,7 +266,7 @@ export default function WorkflowDesigner() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Load Saved Workflow</DialogTitle>
+                  <DialogTitle>Load Saved iFlow</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
@@ -276,11 +276,11 @@ export default function WorkflowDesigner() {
                         <SelectValue placeholder="Choose an iFlow..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {savedWorkflows.map((workflow: any) => (
-                          <SelectItem key={workflow.id} value={workflow.id.toString()}>
+                        {savedWorkflows.map((iflow: any) => (
+                          <SelectItem key={iflow.id} value={iflow.id.toString()}>
                             <div className="flex flex-col">
-                              <span className="font-medium">{workflow.name}</span>
-                              <span className="text-sm text-gray-500">{workflow.description}</span>
+                              <span className="font-medium">{iflow.name}</span>
+                              <span className="text-sm text-gray-500">{iflow.description}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -318,8 +318,8 @@ export default function WorkflowDesigner() {
               {saveWorkflowMutation.isPending || updateWorkflowMutation.isPending 
                 ? "Saving..." 
                 : isNewWorkflow 
-                ? "Save Workflow" 
-                : "Update Workflow"}
+                ? "Save iFlow" 
+                : "Update iFlow"}
             </Button>
             
             {/* User Presence Indicator */}

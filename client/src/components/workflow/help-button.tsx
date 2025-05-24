@@ -16,7 +16,7 @@ export default function HelpButton({ onShowHelp, selectedElement }: HelpButtonPr
       const elementName = selectedElement.businessObject?.name || 'element';
       return `Get help for ${elementName}`;
     }
-    return 'Get workflow design help';
+    return 'Get iFlow design help';
   };
 
   return (

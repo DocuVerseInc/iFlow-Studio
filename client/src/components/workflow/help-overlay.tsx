@@ -12,10 +12,10 @@ interface HelpOverlayProps {
 const getElementHelp = (element: any) => {
   if (!element) {
     return {
-      title: "Workflow Canvas",
+      title: "iFlow Canvas",
       description: "Design your business process by adding and connecting BPMN elements",
       instructions: [
-        "Drag elements from the palette to create your workflow",
+        "Drag elements from the palette to create your iFlow",
         "Connect elements by clicking and dragging between them",
         "Select elements to configure their properties",
         "Use the properties panel to set names, conditions, and assignments"
@@ -23,7 +23,7 @@ const getElementHelp = (element: any) => {
       tips: [
         "Start with a Start Event and end with an End Event",
         "Use descriptive names for all elements",
-        "Test your workflow before deploying to production"
+        "Test your iFlow before deploying to production"
       ]
     };
   }
@@ -33,31 +33,31 @@ const getElementHelp = (element: any) => {
   const helpContent: Record<string, any> = {
     'bpmn:StartEvent': {
       title: "Start Event",
-      description: "Every workflow begins with a Start Event. This defines when and how your process starts.",
+      description: "Every iFlow begins with a Start Event. This defines when and how your process starts.",
       instructions: [
         "Configure the trigger type (Manual, Timer, Message, etc.)",
         "Set any required input parameters",
         "Connect to the first task or gateway in your process",
-        "Name it clearly to indicate what starts this workflow"
+        "Name it clearly to indicate what starts this iFlow"
       ],
       tips: [
-        "A workflow can have multiple start events for different triggers",
-        "Timer start events can run workflows on schedules",
+        "An iFlow can have multiple start events for different triggers",
+        "Timer start events can run iFlows on schedules",
         "Message start events wait for external signals"
       ]
     },
     'bpmn:EndEvent': {
       title: "End Event",
-      description: "End Events mark the completion of a workflow path and can trigger final actions.",
+      description: "End Events mark the completion of an iFlow path and can trigger final actions.",
       instructions: [
         "Choose the appropriate end event type (None, Message, Terminate)",
         "Configure any final notifications or cleanup actions",
-        "Ensure all workflow paths lead to an end event",
+        "Ensure all iFlow paths lead to an end event",
         "Use descriptive names to indicate the outcome"
       ],
       tips: [
         "Multiple end events can represent different outcomes",
-        "Terminate end events stop all active workflow instances",
+        "Terminate end events stop all active iFlow instances",
         "Message end events can notify external systems"
       ]
     },
