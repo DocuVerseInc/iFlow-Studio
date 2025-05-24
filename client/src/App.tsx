@@ -22,6 +22,7 @@ function Router() {
           <Route path="/tasks" component={TaskManagement} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/integrations" component={ApiIntegrations} />
+          <Route path="/versions" component={WorkflowVersions} />
           <Route component={NotFound} />
         </Switch>
       </main>

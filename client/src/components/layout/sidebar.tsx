@@ -7,7 +7,8 @@ import {
   Settings, 
   HelpCircle,
   Workflow,
-  Globe
+  Globe,
+  GitBranch
 } from "lucide-react";
 
 const navigation = [
@@ -25,6 +26,11 @@ const navigation = [
     name: "API Integrations",
     href: "/integrations",
     icon: Globe,
+  },
+  {
+    name: "Versions & Deployments",
+    href: "/versions",
+    icon: GitBranch,
   },
   {
     name: "Admin Dashboard",
