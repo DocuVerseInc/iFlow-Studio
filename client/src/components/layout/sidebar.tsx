@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { 
   PenTool, 
@@ -69,15 +69,24 @@ export default function Sidebar() {
           const isActive = location === item.href || (item.href === "/designer" && location === "/");
           
           return (
-            <Link key={item.name} href={item.href} className={cn(
-              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              isActive 
-                ? "bg-primary text-white" 
-                : "text-gray-700 hover:bg-gray-100"
-            )}>
+            <a 
+              key={item.name} 
+              href={item.href} 
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                isActive 
+                  ? "bg-primary text-white" 
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, "", item.href);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+            >
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>
-            </Link>
+            </a>
           );
         })}
       </nav>
@@ -86,10 +95,19 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         <div className="space-y-2">
           {secondaryNavigation.map((item) => (
-            <Link key={item.name} href={item.href} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50">
+            <a 
+              key={item.name} 
+              href={item.href} 
+              className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, "", item.href);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+            >
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
