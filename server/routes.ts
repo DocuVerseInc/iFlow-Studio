@@ -432,5 +432,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflow versioning routes
+  app.get('/api/workflows/:id/versions', async (req, res) => {
+    try {
+      const workflowId = parseInt(req.params.id);
+      const versions = await storage.getWorkflowVersions(workflowId);
+      res.json(versions);
+    } catch (error) {
+      console.error('Error fetching workflow versions:', error);
+      res.status(500).json({ error: 'Failed to fetch workflow versions' });
+    }
+  });
+
+  app.post('/api/workflows/:id/versions', async (req, res) => {
+    try {
+      const workflowId = parseInt(req.params.id);
+      const versionData = { ...req.body, workflowId };
+      const version = await storage.createWorkflowVersion(versionData);
+      broadcastUpdate('workflow_version_created', version);
+      res.status(201).json(version);
+    } catch (error) {
+      console.error('Error creating workflow version:', error);
+      res.status(500).json({ error: 'Failed to create workflow version' });
+    }
+  });
+
+  // Deployment pipeline routes
+  app.get('/api/deployments', async (req, res) => {
+    try {
+      const workflowId = req.query.workflowId ? parseInt(req.query.workflowId as string) : undefined;
+      const deployments = await storage.getDeploymentPipelines(workflowId);
+      res.json(deployments);
+    } catch (error) {
+      console.error('Error fetching deployments:', error);
+      res.status(500).json({ error: 'Failed to fetch deployments' });
+    }
+  });
+
+  app.post('/api/deployments', async (req, res) => {
+    try {
+      const deployment = await storage.createDeploymentPipeline(req.body);
+      broadcastUpdate('deployment_started', deployment);
+      res.status(201).json(deployment);
+    } catch (error) {
+      console.error('Error creating deployment:', error);
+      res.status(500).json({ error: 'Failed to create deployment' });
+    }
+  });
+
+  app.patch('/api/deployments/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deployment = await storage.updateDeploymentPipeline(id, req.body);
+      if (!deployment) {
+        return res.status(404).json({ error: 'Deployment not found' });
+      }
+      broadcastUpdate('deployment_updated', deployment);
+      res.json(deployment);
+    } catch (error) {
+      console.error('Error updating deployment:', error);
+      res.status(500).json({ error: 'Failed to update deployment' });
+    }
+  });
+
   return httpServer;
 }

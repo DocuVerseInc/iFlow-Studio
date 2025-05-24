@@ -50,10 +50,17 @@ export default function WorkflowVersions() {
   // Create version mutation
   const createVersionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createVersionSchema>) => {
-      return apiRequest(`/api/workflows/${data.workflowId}/versions`, {
+      const response = await fetch(`/api/workflows/${data.workflowId}/versions`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        throw new Error('Failed to create version');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });

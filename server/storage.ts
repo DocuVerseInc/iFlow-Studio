@@ -609,4 +609,320 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { 
+  workflows, 
+  workflowInstances, 
+  tasks, 
+  apiIntegrations, 
+  apiCalls,
+  workflowVersions,
+  deploymentPipeline
+} from "@shared/schema";
+
+export class DatabaseStorage implements IStorage {
+  async getWorkflows(): Promise<Workflow[]> {
+    return db.select().from(workflows);
+  }
+
+  async getWorkflow(id: number): Promise<Workflow | undefined> {
+    const [workflow] = await db.select().from(workflows).where(eq(workflows.id, id));
+    return workflow || undefined;
+  }
+
+  async createWorkflow(insertWorkflow: InsertWorkflow): Promise<Workflow> {
+    const [workflow] = await db
+      .insert(workflows)
+      .values(insertWorkflow)
+      .returning();
+    return workflow;
+  }
+
+  async updateWorkflow(id: number, updateData: Partial<InsertWorkflow>): Promise<Workflow | undefined> {
+    const [workflow] = await db
+      .update(workflows)
+      .set(updateData)
+      .where(eq(workflows.id, id))
+      .returning();
+    return workflow || undefined;
+  }
+
+  async deleteWorkflow(id: number): Promise<boolean> {
+    const result = await db.delete(workflows).where(eq(workflows.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Workflow versioning methods
+  async getWorkflowVersions(workflowId: number): Promise<WorkflowVersion[]> {
+    return db.select().from(workflowVersions).where(eq(workflowVersions.workflowId, workflowId));
+  }
+
+  async createWorkflowVersion(insertVersion: InsertWorkflowVersion): Promise<WorkflowVersion> {
+    const [version] = await db
+      .insert(workflowVersions)
+      .values(insertVersion)
+      .returning();
+    return version;
+  }
+
+  async getWorkflowVersion(id: number): Promise<WorkflowVersion | undefined> {
+    const [version] = await db.select().from(workflowVersions).where(eq(workflowVersions.id, id));
+    return version || undefined;
+  }
+
+  // Deployment pipeline methods
+  async getDeploymentPipelines(workflowId?: number): Promise<DeploymentPipeline[]> {
+    if (workflowId) {
+      return db.select().from(deploymentPipeline).where(eq(deploymentPipeline.workflowId, workflowId));
+    }
+    return db.select().from(deploymentPipeline);
+  }
+
+  async createDeploymentPipeline(insertDeployment: InsertDeploymentPipeline): Promise<DeploymentPipeline> {
+    const [deployment] = await db
+      .insert(deploymentPipeline)
+      .values(insertDeployment)
+      .returning();
+    return deployment;
+  }
+
+  async updateDeploymentPipeline(id: number, updateData: Partial<InsertDeploymentPipeline>): Promise<DeploymentPipeline | undefined> {
+    const [deployment] = await db
+      .update(deploymentPipeline)
+      .set(updateData)
+      .where(eq(deploymentPipeline.id, id))
+      .returning();
+    return deployment || undefined;
+  }
+
+  async getDeploymentPipeline(id: number): Promise<DeploymentPipeline | undefined> {
+    const [deployment] = await db.select().from(deploymentPipeline).where(eq(deploymentPipeline.id, id));
+    return deployment || undefined;
+  }
+
+  // Workflow instance operations
+  async getWorkflowInstances(): Promise<WorkflowInstance[]> {
+    return db.select().from(workflowInstances);
+  }
+
+  async getWorkflowInstance(id: number): Promise<WorkflowInstance | undefined> {
+    const [instance] = await db.select().from(workflowInstances).where(eq(workflowInstances.id, id));
+    return instance || undefined;
+  }
+
+  async getWorkflowInstancesByWorkflowId(workflowId: number): Promise<WorkflowInstance[]> {
+    return db.select().from(workflowInstances).where(eq(workflowInstances.workflowId, workflowId));
+  }
+
+  async createWorkflowInstance(insertInstance: InsertWorkflowInstance): Promise<WorkflowInstance> {
+    const [instance] = await db
+      .insert(workflowInstances)
+      .values(insertInstance)
+      .returning();
+    return instance;
+  }
+
+  async updateWorkflowInstance(id: number, updateData: Partial<InsertWorkflowInstance>): Promise<WorkflowInstance | undefined> {
+    const [instance] = await db
+      .update(workflowInstances)
+      .set(updateData)
+      .where(eq(workflowInstances.id, id))
+      .returning();
+    return instance || undefined;
+  }
+
+  // Task operations
+  async getTasks(): Promise<Task[]> {
+    return db.select().from(tasks);
+  }
+
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task || undefined;
+  }
+
+  async getTasksByAssignee(assignee: string): Promise<TaskWithWorkflow[]> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        workflowInstanceId: tasks.workflowInstanceId,
+        taskDefinitionKey: tasks.taskDefinitionKey,
+        name: tasks.name,
+        description: tasks.description,
+        assignee: tasks.assignee,
+        status: tasks.status,
+        priority: tasks.priority,
+        dueDate: tasks.dueDate,
+        createdAt: tasks.createdAt,
+        completedAt: tasks.completedAt,
+        formData: tasks.formData,
+        workflowName: workflows.name,
+        workflowId: workflows.id,
+      })
+      .from(tasks)
+      .leftJoin(workflowInstances, eq(tasks.workflowInstanceId, workflowInstances.id))
+      .leftJoin(workflows, eq(workflowInstances.workflowId, workflows.id))
+      .where(eq(tasks.assignee, assignee));
+
+    return result;
+  }
+
+  async getTasksByWorkflowInstance(instanceId: number): Promise<Task[]> {
+    return db.select().from(tasks).where(eq(tasks.workflowInstanceId, instanceId));
+  }
+
+  async createTask(insertTask: InsertTask): Promise<Task> {
+    const [task] = await db
+      .insert(tasks)
+      .values(insertTask)
+      .returning();
+    return task;
+  }
+
+  async updateTask(id: number, updateData: Partial<InsertTask>): Promise<Task | undefined> {
+    const [task] = await db
+      .update(tasks)
+      .set(updateData)
+      .where(eq(tasks.id, id))
+      .returning();
+    return task || undefined;
+  }
+
+  // API Integration operations
+  async getApiIntegrations(): Promise<ApiIntegration[]> {
+    return db.select().from(apiIntegrations);
+  }
+
+  async getApiIntegration(id: number): Promise<ApiIntegration | undefined> {
+    const [integration] = await db.select().from(apiIntegrations).where(eq(apiIntegrations.id, id));
+    return integration || undefined;
+  }
+
+  async createApiIntegration(insertIntegration: InsertApiIntegration): Promise<ApiIntegration> {
+    const [integration] = await db
+      .insert(apiIntegrations)
+      .values(insertIntegration)
+      .returning();
+    return integration;
+  }
+
+  async updateApiIntegration(id: number, updateData: Partial<InsertApiIntegration>): Promise<ApiIntegration | undefined> {
+    const [integration] = await db
+      .update(apiIntegrations)
+      .set(updateData)
+      .where(eq(apiIntegrations.id, id))
+      .returning();
+    return integration || undefined;
+  }
+
+  async deleteApiIntegration(id: number): Promise<boolean> {
+    const result = await db.delete(apiIntegrations).where(eq(apiIntegrations.id, id));
+    return result.rowCount > 0;
+  }
+
+  // API Call operations
+  async getApiCalls(): Promise<ApiCall[]> {
+    return db.select().from(apiCalls);
+  }
+
+  async getApiCall(id: number): Promise<ApiCall | undefined> {
+    const [apiCall] = await db.select().from(apiCalls).where(eq(apiCalls.id, id));
+    return apiCall || undefined;
+  }
+
+  async getApiCallsByWorkflowInstance(instanceId: number): Promise<ApiCall[]> {
+    return db.select().from(apiCalls).where(eq(apiCalls.workflowInstanceId, instanceId));
+  }
+
+  async createApiCall(insertApiCall: InsertApiCall): Promise<ApiCall> {
+    const [apiCall] = await db
+      .insert(apiCalls)
+      .values(insertApiCall)
+      .returning();
+    return apiCall;
+  }
+
+  async updateApiCall(id: number, updateData: Partial<InsertApiCall>): Promise<ApiCall | undefined> {
+    const [apiCall] = await db
+      .update(apiCalls)
+      .set(updateData)
+      .where(eq(apiCalls.id, id))
+      .returning();
+    return apiCall || undefined;
+  }
+
+  // Dashboard metrics
+  async getAdminMetrics(): Promise<AdminMetrics> {
+    const allWorkflows = await this.getWorkflows();
+    const allInstances = await this.getWorkflowInstances();
+    const allTasks = await this.getTasks();
+    const allApiCalls = await this.getApiCalls();
+    const allDeployments = await this.getDeploymentPipelines();
+    
+    const activeWorkflows = allInstances.filter(i => i.status === 'running').length;
+    const pendingTasks = allTasks.filter(t => t.status === 'pending').length;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const completedToday = allTasks.filter(t => 
+      t.status === 'completed' && 
+      t.completedAt && 
+      t.completedAt >= today
+    ).length;
+
+    const apiCallsToday = allApiCalls.filter(call => 
+      call.createdAt >= today
+    ).length;
+
+    const failedApiCalls = allApiCalls.filter(call => 
+      call.status === 'failed'
+    ).length;
+
+    const deploymentsToday = allDeployments.filter(deployment => 
+      deployment.createdAt >= today
+    ).length;
+    
+    const failedDeployments = allDeployments.filter(deployment => 
+      deployment.status === 'failed' && deployment.createdAt >= today
+    ).length;
+    
+    const systemHealth = 98.5;
+    
+    return {
+      activeWorkflows,
+      pendingTasks,
+      completedToday,
+      systemHealth,
+      apiCallsToday,
+      failedApiCalls,
+      deploymentsToday,
+      failedDeployments,
+      recentActivity: []
+    };
+  }
+
+  async getWorkflowsWithInstances(): Promise<WorkflowWithInstance[]> {
+    const allWorkflows = await this.getWorkflows();
+    const result: WorkflowWithInstance[] = [];
+    
+    for (const workflow of allWorkflows) {
+      const instances = await this.getWorkflowInstancesByWorkflowId(workflow.id);
+      const activeTasks = (await this.getTasks()).filter(task => {
+        const instanceIds = instances.map(i => i.id);
+        return instanceIds.includes(task.workflowInstanceId) && 
+               (task.status === 'pending' || task.status === 'in_progress');
+      }).length;
+      
+      result.push({
+        ...workflow,
+        instances,
+        activeTasks
+      });
+    }
+    
+    return result;
+  }
+}
+
+export const storage = new DatabaseStorage();
