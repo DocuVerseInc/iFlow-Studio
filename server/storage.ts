@@ -552,6 +552,14 @@ export class MemStorage implements IStorage {
     // Simulate system health (in real app, this would check actual system metrics)
     const systemHealth = 98.5;
     
+    const deploymentsToday = Array.from(this.deploymentPipelines.values()).filter(deployment => 
+      deployment.createdAt >= today
+    ).length;
+    
+    const failedDeployments = Array.from(this.deploymentPipelines.values()).filter(deployment => 
+      deployment.status === 'failed' && deployment.createdAt >= today
+    ).length;
+
     return {
       activeWorkflows,
       pendingTasks,
@@ -559,6 +567,8 @@ export class MemStorage implements IStorage {
       systemHealth,
       apiCallsToday,
       failedApiCalls,
+      deploymentsToday,
+      failedDeployments,
       recentActivity: this.recentActivity.slice(-10).reverse(), // Last 10 activities, newest first
     };
   }
