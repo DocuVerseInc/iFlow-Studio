@@ -86,11 +86,9 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         <div className="space-y-2">
           {secondaryNavigation.map((item) => (
-            <Link key={item.name} href={item.href}>
-              <a className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50">
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
-              </a>
+            <Link key={item.name} href={item.href} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50">
+              <item.icon className="h-4 w-4" />
+              <span>{item.name}</span>
             </Link>
           ))}
         </div>
