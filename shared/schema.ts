@@ -4,17 +4,23 @@ import { z } from "zod";
 
 export const workflows = pgTable("workflows", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
+  workflowId: text("workflow_id").notNull().unique(), // User-entered unique ID (max 10 chars, alphanumeric + hyphen/underscore)
+  name: text("name").notNull(), // Human-readable name
+  description: text("description"), // Brief description of workflow purpose
   bpmnXml: text("bpmn_xml").notNull(),
-  version: text("version").notNull().default("1.0.0"),
+  version: text("version").notNull().default("1.0"), // Auto-generated version starting at 1.0, increments by 0.1
+  status: text("status").notNull().default("Draft"), // Draft, Active, Inactive, Archived
+  createdBy: text("created_by").notNull(), // Auto-filled, user cannot modify
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Auto-filled, user cannot modify
+  lastModifiedBy: text("last_modified_by").notNull(), // Auto-filled, user cannot modify
+  lastModifiedAt: timestamp("last_modified_at").notNull().defaultNow(), // Auto-filled, user cannot modify
+  // Legacy fields for backward compatibility
   isActive: boolean("is_active").notNull().default(true),
   isLatest: boolean("is_latest").notNull().default(true),
   parentWorkflowId: integer("parent_workflow_id"),
-  deploymentStatus: text("deployment_status").notNull().default("not_deployed"), // not_deployed, deploying, deployed, deployment_failed
+  deploymentStatus: text("deployment_status").notNull().default("not_deployed"),
   deployedAt: timestamp("deployed_at"),
   deployedBy: text("deployed_by"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
@@ -47,7 +53,16 @@ export const insertWorkflowSchema = createInsertSchema(workflows).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  lastModifiedAt: true,
+  version: true, // Auto-generated
+  createdBy: true, // Auto-filled
+  lastModifiedBy: true, // Auto-filled
 }).extend({
+  workflowId: z.string()
+    .min(1, "Workflow ID is required")
+    .max(10, "Workflow ID must be 10 characters or less")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Workflow ID can only contain letters, numbers, hyphens, and underscores"),
+  status: z.enum(["Draft", "Active", "Inactive", "Archived"]).default("Draft"),
   version: z.string().default("1.0.0"),
 });
 
