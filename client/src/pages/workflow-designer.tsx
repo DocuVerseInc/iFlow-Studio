@@ -125,6 +125,35 @@ export default function WorkflowDesigner() {
   });
 
   const handleSaveWorkflow = () => {
+    // Validate Workflow ID
+    if (!workflowId.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Workflow ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(workflowId)) {
+      toast({
+        title: "Validation Error",
+        description: "Workflow ID can only contain letters, numbers, hyphens, and underscores",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (workflowId.length > 10) {
+      toast({
+        title: "Validation Error",
+        description: "Workflow ID must be 10 characters or less",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate Workflow Name
     if (!workflowName.trim()) {
       toast({
         title: "Validation Error",
@@ -134,6 +163,7 @@ export default function WorkflowDesigner() {
       return;
     }
 
+    // Validate BPMN XML
     if (!bpmnXml.trim()) {
       toast({
         title: "Validation Error", 
@@ -146,30 +176,43 @@ export default function WorkflowDesigner() {
     if (isNewWorkflow || !currentWorkflowId) {
       // Create new workflow
       saveWorkflowMutation.mutate({
+        workflowId: workflowId,
         name: workflowName,
         description: workflowDescription,
         bpmnXml: bpmnXml,
-        version: "1.0",
+        status: workflowStatus as "Draft" | "Active" | "Inactive" | "Archived",
+        version: workflowVersion,
       });
     } else {
       // Update existing workflow
       updateWorkflowMutation.mutate({ 
         id: currentWorkflowId, 
         workflow: {
+          workflowId: workflowId,
           name: workflowName,
           description: workflowDescription,
           bpmnXml: bpmnXml,
+          status: workflowStatus as "Draft" | "Active" | "Inactive" | "Archived",
         }
       });
     }
   };
 
-  const handleLoadWorkflow = (workflowId: string) => {
-    const workflow = savedWorkflows.find((w: any) => w.id.toString() === workflowId);
+  const handleLoadWorkflow = (workflowIdParam: string) => {
+    const workflow = (savedWorkflows as any[]).find((w: any) => w.id.toString() === workflowIdParam);
     if (workflow) {
+      // Load all workflow attributes
+      setWorkflowId(workflow.workflowId || workflow.id.toString());
       setWorkflowName(workflow.name);
-      setWorkflowDescription(workflow.description);
+      setWorkflowDescription(workflow.description || "");
+      setWorkflowStatus(workflow.status || "Draft");
+      setWorkflowVersion(workflow.version || "1.0");
       setBpmnXml(workflow.bpmnXml);
+      setCreatedBy(workflow.createdBy || "current_user");
+      setCreatedDate(workflow.createdAt ? new Date(workflow.createdAt) : null);
+      setLastModifiedBy(workflow.lastModifiedBy || "current_user");
+      setLastModifiedDate(workflow.lastModifiedAt ? new Date(workflow.lastModifiedAt) : null);
+      
       setCurrentWorkflowId(workflow.id);
       setIsNewWorkflow(false);
       setIsLoadDialogOpen(false);
@@ -375,37 +418,149 @@ export default function WorkflowDesigner() {
         </div>
       </div>
 
-      {/* Workflow Details Form */}
+      {/* iFlow Attributes Form */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="workflow-name" className="text-sm font-medium text-gray-700">
-              iFlow Name *
+        <div className="grid grid-cols-12 gap-4 items-end">
+          {/* Row 1: Core Identification */}
+          <div className="col-span-2">
+            <Label htmlFor="workflow-id" className="text-sm font-medium text-red-600">
+              Workflow ID *
+            </Label>
+            <Input
+              id="workflow-id"
+              value={workflowId}
+              onChange={(e) => setWorkflowId(e.target.value)}
+              placeholder="e.g., order-proc"
+              className="mt-1"
+              maxLength={10}
+              disabled={!isNewWorkflow}
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              Max 10 chars, a-z, 0-9, _, -
+            </div>
+          </div>
+          
+          <div className="col-span-3">
+            <Label htmlFor="workflow-name" className="text-sm font-medium text-red-600">
+              Workflow Name *
             </Label>
             <Input
               id="workflow-name"
               value={workflowName}
               onChange={(e) => setWorkflowName(e.target.value)}
-              placeholder="Enter iFlow name..."
+              placeholder="e.g., Order Processing Workflow"
               className="mt-1"
             />
           </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="workflow-description" className="text-sm font-medium text-gray-700">
-              Description
+          
+          <div className="col-span-2">
+            <Label htmlFor="workflow-status" className="text-sm font-medium">
+              Status
+            </Label>
+            <Select value={workflowStatus} onValueChange={setWorkflowStatus}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Draft">Draft</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="col-span-2">
+            <Label className="text-sm font-medium text-gray-500">
+              Version
             </Label>
             <Input
+              value={workflowVersion}
+              className="mt-1 bg-gray-50"
+              disabled
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              Auto-generated
+            </div>
+          </div>
+          
+          <div className="col-span-3">
+            <Label htmlFor="workflow-description" className="text-sm font-medium">
+              Description
+            </Label>
+            <Textarea
               id="workflow-description"
               value={workflowDescription}
               onChange={(e) => setWorkflowDescription(e.target.value)}
-              placeholder="Enter iFlow description..."
+              placeholder="Brief description of workflow purpose"
               className="mt-1"
+              rows={2}
             />
           </div>
+          
+          {/* Row 2: Audit Information */}
+          <div className="col-span-2">
+            <Label className="text-sm font-medium text-gray-500">
+              Created By
+            </Label>
+            <Input
+              value={createdBy}
+              className="mt-1 bg-gray-50"
+              disabled
+            />
+          </div>
+          
+          <div className="col-span-2">
+            <Label className="text-sm font-medium text-gray-500">
+              Created Date
+            </Label>
+            <Input
+              value={createdDate ? createdDate.toLocaleDateString() : "Not saved yet"}
+              className="mt-1 bg-gray-50"
+              disabled
+            />
+          </div>
+          
+          <div className="col-span-2">
+            <Label className="text-sm font-medium text-gray-500">
+              Last Modified By
+            </Label>
+            <Input
+              value={lastModifiedBy}
+              className="mt-1 bg-gray-50"
+              disabled
+            />
+          </div>
+          
+          <div className="col-span-2">
+            <Label className="text-sm font-medium text-gray-500">
+              Last Modified Date
+            </Label>
+            <Input
+              value={lastModifiedDate ? lastModifiedDate.toLocaleDateString() : "Not saved yet"}
+              className="mt-1 bg-gray-50"
+              disabled
+            />
+          </div>
+          
+          <div className="col-span-4 flex items-end justify-between">
+            <Button
+              onClick={() => setIsHelpVisible(!isHelpVisible)}
+              variant="outline"
+              size="sm"
+            >
+              {isHelpVisible ? "Hide Help" : "Show Help"}
+            </Button>
+            <div className="text-xs text-muted-foreground text-right">
+              * Required fields<br/>
+              Only Active workflows can be deployed
+            </div>
+          </div>
         </div>
+        
         {currentWorkflowId && (
-          <div className="mt-2 text-sm text-blue-600">
-            Currently editing: {workflowName} (ID: {currentWorkflowId})
+          <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-700">
+            Currently editing: {workflowName} (Workflow ID: {workflowId}, Version: {workflowVersion})
           </div>
         )}
       </div>
