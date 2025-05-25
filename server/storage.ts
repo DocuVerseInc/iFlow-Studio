@@ -632,17 +632,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkflow(insertWorkflow: InsertWorkflow): Promise<Workflow> {
+    // Auto-generate version based on existing workflows with same workflowId
+    const existingWorkflows = await db
+      .select()
+      .from(workflows)
+      .where(eq(workflows.workflowId, insertWorkflow.workflowId));
+    
+    const currentUser = "current_user"; // TODO: Get from session/auth
+    const now = new Date();
+    
+    // Calculate next version (1.0, 1.1, 1.2, etc.)
+    let nextVersion = "1.0";
+    if (existingWorkflows.length > 0) {
+      const versions = existingWorkflows.map(w => parseFloat(w.version)).sort((a, b) => b - a);
+      const latestVersion = versions[0];
+      nextVersion = (latestVersion + 0.1).toFixed(1);
+    }
+    
     const [workflow] = await db
       .insert(workflows)
-      .values(insertWorkflow)
+      .values({
+        ...insertWorkflow,
+        version: nextVersion,
+        createdBy: currentUser,
+        lastModifiedBy: currentUser,
+        lastModifiedAt: now,
+      })
       .returning();
     return workflow;
   }
 
   async updateWorkflow(id: number, updateData: Partial<InsertWorkflow>): Promise<Workflow | undefined> {
+    const currentUser = "current_user"; // TODO: Get from session/auth
     const [workflow] = await db
       .update(workflows)
-      .set(updateData)
+      .set({
+        ...updateData,
+        lastModifiedBy: currentUser,
+        lastModifiedAt: new Date(),
+      })
       .where(eq(workflows.id, id))
       .returning();
     return workflow || undefined;

@@ -19,8 +19,18 @@ import { Download, Upload, Save, Play, UserCheck, GitBranch, Square, FolderOpen,
 import type { InsertWorkflow } from "@shared/schema";
 
 export default function WorkflowDesigner() {
+  // Workflow attributes state
+  const [workflowId, setWorkflowId] = useState("");
   const [workflowName, setWorkflowName] = useState("");
   const [workflowDescription, setWorkflowDescription] = useState("");
+  const [workflowStatus, setWorkflowStatus] = useState("Draft");
+  const [workflowVersion, setWorkflowVersion] = useState("1.0");
+  const [createdBy, setCreatedBy] = useState("current_user");
+  const [createdDate, setCreatedDate] = useState<Date | null>(null);
+  const [lastModifiedBy, setLastModifiedBy] = useState("current_user");
+  const [lastModifiedDate, setLastModifiedDate] = useState<Date | null>(null);
+  
+  // Designer state
   const [bpmnXml, setBpmnXml] = useState("");
   const [selectedElement, setSelectedElement] = useState<any>(null);
   const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
